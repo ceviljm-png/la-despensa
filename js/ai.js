@@ -215,17 +215,25 @@
       return false;
     },
 
-    /* ¿Acepta el jugador q (máquina) la oferta? q entrega offer.get y recibe offer.give */
-    accepts(g, q, offer) {
+    /* Valora una oferta para el jugador q (máquina), que entrega offer.get y recibe offer.give.
+       Devuelve { ok, why }: why es 'sin' (no tiene lo que se pide), 'lider' (no ayuda a quien va
+       a ganar) o 'poco' (pide más a cambio). Cuanto más generosa es la oferta, más fácil que acepte. */
+    judge(g, q, offer) {
       const s = g.s, res = s.players[q].res;
-      if (!g.canAfford(q, offer.get)) return false;
-      if (g.points(offer.from, false) >= MODES[s.mode].target - 2) return false;
-      if (total(offer.give) < total(offer.get)) return false;
+      if (!g.canAfford(q, offer.get)) return { ok: false, why: 'sin' };
+      if (g.points(offer.from, false) >= MODES[s.mode].target - 2) return { ok: false, why: 'lider' };
+      let lose = 0, gain = 0;
       for (const r of RES) {
-        if (offer.get[r] && res[r] - offer.get[r] < 1) return false;
-        if (offer.give[r] && res[r] >= 3) return false;
+        // desprenderse de la última carta de un recurso cuesta más que de una que sobra
+        for (let k = 0, c = res[r]; k < (offer.get[r] || 0); k++, c--) lose += c <= 1 ? 1.5 : c === 2 ? 1 : 0.6;
+        // y una carta que no se tiene vale más que otra repetida
+        for (let k = 0, c = res[r]; k < (offer.give[r] || 0); k++, c++) gain += c === 0 ? 1.2 : c === 1 ? 1 : c === 2 ? 0.7 : 0.4;
       }
-      return true;
+      return gain > lose ? { ok: true } : { ok: false, why: 'poco' };
+    },
+
+    accepts(g, q, offer) {
+      return AI.judge(g, q, offer).ok;
     },
   };
 

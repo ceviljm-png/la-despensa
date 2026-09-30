@@ -620,7 +620,7 @@
       } else {
         o += '<h3>Ofreces</h3><div class="steps">' + RES.map((r) => stepper('g', r, off.g[r])).join('') +
           '</div><h3>Pides</h3><div class="steps">' + RES.map((r) => stepper('w', r, off.w[r])).join('') + '</div>' +
-          `<p class="muted">${note || 'Los rivales aceptan si les sobra lo que pides y les viene bien lo que ofreces.'}</p>
+          `<p class="muted">${note || 'Los rivales aceptan si les compensa: cuanto más ofrezcas, más fácil.'}</p>
           <div class="row"><button class="btn" data-do="close">Cerrar</button>
           <button class="btn primary" data-do="offer"${total(off.g) && total(off.w) ? '' : ' disabled'}>Proponer</button></div>`;
       }
@@ -648,10 +648,16 @@
         }
       } else if (d.do === 'offer') {
         m.close();
-        const done = await proposeTrade(p, off.g, off.w);
+        const refused = await proposeTrade(p, off.g, off.w);
         render();
         save();
-        if (!done) { note = 'Nadie ha aceptado. Prueba con otra oferta.'; document.body.appendChild(m.el.parentNode); draw(); }
+        if (refused) {
+          note = '<b class="refused">Nadie acepta.</b> ' + refused;
+          document.body.appendChild(m.el.parentNode);
+          draw();
+          const el = m.el.querySelector('.refused');
+          if (el) el.parentNode.scrollIntoView({ block: 'nearest' });
+        }
         return;
       } else if (d.do === 'close') {
         m.close();
@@ -665,20 +671,24 @@
 
   async function proposeTrade(p, give, get) {
     const s = g.s, n = s.players.length, offer = { from: p, give, get };
-    const yes = [];
+    const yes = [], no = [];
+    const WHY = { sin: 'no tiene lo que pides', lider: 'no quiere ayudarte, vas ganando', poco: 'pide algo más a cambio', no: 'lo rechaza' };
     for (let d = 1; d < n; d++) {
       const q = (p + d) % n;
-      if (!g.canAfford(q, get)) continue;
-      if (s.players[q].ai ? AI.accepts(g, q, offer) : await askHuman(q, offer)) yes.push(q);
+      let r;
+      if (s.players[q].ai) r = AI.judge(g, q, offer);
+      else if (!g.canAfford(q, get)) r = { ok: false, why: 'sin' };
+      else r = (await askHuman(q, offer)) ? { ok: true } : { ok: false, why: 'no' };
+      if (r.ok) yes.push(q);
+      else no.push(esc(s.players[q].name) + ' ' + WHY[r.why]);
     }
-    if (!yes.length) return false;
+    if (!yes.length) return 'Por ' + resText(give) + ' a cambio de ' + resText(get) + ': ' + no.join('; ') + '.';
     const q = await dialog(`<h2>${yes.length === 1 ? 'Hay trato' : '¿Con quién cambias?'}</h2>${offerHtml(offer, 'Das', 'Recibes')}
       <div class="list">${yes.map((i) => `<button class="btn primary wide" data-close="${i}">
         <i class="dot" style="--c:${colorOf(i)}"></i>Cambiar con ${esc(s.players[i].name)}</button>`).join('')}
       <button class="btn wide" data-close="no">Cancelar</button></div>`);
-    if (q === 'no') return true;
-    g.playerTrade(p, Number(q), give, get);
-    return true;
+    if (q !== 'no') g.playerTrade(p, Number(q), give, get);
+    return '';
   }
 
   /* ---------- fichas de jugador, menú y reglas ---------- */
