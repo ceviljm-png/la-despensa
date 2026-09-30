@@ -4,10 +4,12 @@
   const E = typeof module !== 'undefined' && module.exports ? require('./engine.js') : root.Despensa;
   const { GEO, RES, COSTS, MODES, PIPS, emptyRes, total } = E;
 
+  /* Azar que se suma a cada valoración: en Fácil es tan grande que la máquina elige peor */
+  let noise = 0.3;
   const pick = (list, score) => {
     let best = null, bs = -Infinity;
     for (const x of list) {
-      const sc = score(x) + Math.random() * 0.3;
+      const sc = score(x) + Math.random() * noise;
       if (sc > bs) { bs = sc; best = x; }
     }
     return best;
@@ -172,7 +174,7 @@
   function discardFor(g, p) {
     const res = Object.assign({}, g.s.players[p].res), map = emptyRes();
     for (let n = g.s.pending[p]; n > 0; n--) {
-      const r = pick(RES, (x) => res[x]);
+      const r = pick(RES.filter((x) => res[x] > 0), (x) => res[x]);
       res[r]--;
       map[r]++;
     }
@@ -184,6 +186,7 @@
        o { offer } cuando propone un cambio que debe resolver quien dirige la partida. */
     step(g) {
       const s = g.s;
+      noise = s.level === 'facil' ? 4 : 0.3;
       if (s.phase === 'over') return false;
       if (s.phase === 'discard') {
         const i = Object.keys(s.pending).map(Number).find((k) => s.players[k].ai);
@@ -216,12 +219,28 @@
     },
 
     /* Valora una oferta para el jugador q (máquina), que entrega offer.get y recibe offer.give.
-       Devuelve { ok, why }: why es 'sin' (no tiene lo que se pide), 'lider' (no ayuda a quien va
-       a ganar) o 'poco' (pide más a cambio). Cuanto más generosa es la oferta, más fácil que acepte. */
+       Devuelve { ok, why, res }. Motivos de rechazo: 'sin' (no tiene lo que se pide), 'lider' (no ayuda
+       a quien va a ganar), 'poco' (pide más a cambio), 'ultima' (no se queda sin el recurso res) y
+       'sobra' (ya tiene de sobra el recurso res). El criterio depende del nivel de la partida. */
     judge(g, q, offer) {
-      const s = g.s, res = s.players[q].res;
+      const s = g.s, res = s.players[q].res, level = s.level || 'normal';
       if (!g.canAfford(q, offer.get)) return { ok: false, why: 'sin' };
+      if (level === 'facil') {
+        return total(offer.give) >= total(offer.get) ? { ok: true } : { ok: false, why: 'poco' };
+      }
       if (g.points(offer.from, false) >= MODES[s.mode].target - 2) return { ok: false, why: 'lider' };
+      // Reglas fijas del nivel Difícil: mejorar la oferta no las ablanda
+      const strict = () => {
+        if (total(offer.give) < total(offer.get)) return { ok: false, why: 'poco' };
+        for (const r of RES) {
+          if (offer.get[r] && res[r] - offer.get[r] < 1) return { ok: false, why: 'ultima', res: r };
+          if (offer.give[r] && res[r] >= 3) return { ok: false, why: 'sobra', res: r };
+        }
+        return { ok: true };
+      };
+      const fixed = strict();
+      if (level === 'dificil' || fixed.ok) return fixed;
+      // Normal: además acepta lo que le compense, así que nunca es más duro que Difícil
       let lose = 0, gain = 0;
       for (const r of RES) {
         // desprenderse de la última carta de un recurso cuesta más que de una que sobra
@@ -229,7 +248,7 @@
         // y una carta que no se tiene vale más que otra repetida
         for (let k = 0, c = res[r]; k < (offer.give[r] || 0); k++, c++) gain += c === 0 ? 1.2 : c === 1 ? 1 : c === 2 ? 0.7 : 0.4;
       }
-      return gain > lose ? { ok: true } : { ok: false, why: 'poco' };
+      return gain >= lose ? { ok: true } : { ok: false, why: 'poco' };
     },
 
     accepts(g, q, offer) {

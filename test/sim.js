@@ -1,5 +1,5 @@
 /* Partidas completas máquina contra máquina para comprobar las reglas.  Uso: node test/sim.js [partidas] */
-const { Game, GEO, RES, MODES, total } = require('../js/engine.js');
+const { Game, GEO, RES, MODES, LEVELS, total } = require('../js/engine.js');
 const AI = require('../js/ai.js');
 
 const N = Number(process.argv[2]) || 200;
@@ -28,11 +28,11 @@ function check(g) {
   }
 }
 
-for (const mode of Object.keys(MODES)) {
+for (const level of Object.keys(LEVELS)) for (const mode of Object.keys(MODES)) {
   for (const n of [2, 3, 4]) {
     let turns = 0, trades = 0, maxTurns = 0, wins = Array(n).fill(0);
     for (let k = 0; k < N; k++) {
-      const g = Game.create({ mode, players: Array.from({ length: n }, (_, i) => ({ name: 'IA' + i, ai: true })) });
+      const g = Game.create({ mode, level, players: Array.from({ length: n }, (_, i) => ({ name: 'IA' + i, ai: true })) });
       let steps = 0;
       while (g.s.phase !== 'over') {
         const r = AI.step(g);
@@ -55,7 +55,7 @@ for (const mode of Object.keys(MODES)) {
       maxTurns = Math.max(maxTurns, g.s.turn);
       wins[g.s.winner]++;
     }
-    console.log(mode.padEnd(9), n + ' jugadores', '· rondas medias', (turns / N / n).toFixed(1),
+    console.log(level.padEnd(8), mode.padEnd(9), n + ' jugadores', '· rondas medias', (turns / N / n).toFixed(1),
       '· máx', Math.round(maxTurns / n), '· cambios/partida', (trades / N).toFixed(1), '· victorias', wins.join('/'));
   }
 }

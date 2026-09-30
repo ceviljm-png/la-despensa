@@ -4,36 +4,49 @@ Juego de estrategia por turnos sobre una isla de 19 parcelas: se plantan huertas
 se tienden caminos y se comercia con aceite, sal, pescado, trigo y vino. Es una app web instalable (PWA):
 el mismo juego funciona en Android y en macOS, sin tiendas ni compilación.
 
-## Jugar
+**Jugar ahora:** https://ceviljm-png.github.io/la-despensa/
 
-- **En el Mac, sin instalar nada:** abrir `index.html` con doble clic.
-- **Con servidor local** (necesario para instalarla y para abrirla desde el móvil en la misma wifi):
+## Instalarlo como app
 
-  ```bash
-  python3 serve.py
-  ```
+- **Android (Chrome):** abrir el enlace, menú ⋮ y «Instalar aplicación».
+- **Mac (Chrome):** abrir el enlace y pulsar el icono de instalar de la barra de direcciones.
+- **Mac (Safari):** abrir el enlace y Archivo → «Añadir al Dock».
 
-  Mac: `http://localhost:8130` · Android: `http://<IP-del-Mac>:8130`
-- **Instalada como app:** hay que publicarla en una dirección `https://` (cualquier alojamiento de archivos
-  estáticos sirve: basta subir esta carpeta). Después, en Chrome de Android «Instalar aplicación» y en el Mac
-  el icono de instalar de Chrome o «Añadir al Dock» de Safari. Una vez instalada funciona sin conexión.
+Una vez instalada funciona sin conexión.
 
-## Tipos de partida
-
-| | Sencilla | Clásica | Completa |
-|---|---|---|---|
-| Puntos para ganar | 8 | 10 | 10 |
-| Puertos (cambios 3:1 y 2:1) | – | sí | sí |
-| Cartas de cocina, Gran Brigada | – | sí | sí |
-| Cambios entre jugadores | – | – | sí |
+## Cómo es una partida
 
 De 2 a 4 jugadores; cada uno puede ser una persona (pasando el dispositivo) o la máquina.
 La partida se guarda sola y se puede continuar desde el inicio.
 
-## Código
+| Tipo de partida | Sencilla | Clásica | Completa |
+|---|---|---|---|
+| Puntos para ganar | 8 | 10 | 10 |
+| Puertos (cambios 3:1 y 2:1) | – | sí | sí |
+| Cartas de cocina y Gran Brigada | – | sí | sí |
+| Cambios entre jugadores | – | – | sí |
 
-- `js/engine.js` — reglas y estado de la partida, sin DOM.
-- `js/ai.js` — decisiones de los rivales.
-- `js/ui.js`, `css/style.css`, `index.html` — interfaz.
-- `sw.js`, `manifest.webmanifest`, `icons/` — instalación y uso sin conexión.
-- `test/sim.js` — partidas completas máquina contra máquina que comprueban las reglas: `node test/sim.js`.
+| Dificultad | Los rivales que lleva la máquina… |
+|---|---|
+| Fácil | juegan peor y aceptan cualquier cambio en el que no salgan perdiendo cartas |
+| Normal | aceptan un cambio si les compensa: cuanto más se ofrece, más fácil |
+| Difícil | nunca se quedan sin un recurso ni aceptan lo que ya les sobra |
+
+Las reglas completas están dentro del juego, en «Cómo se juega».
+
+## Desarrollo
+
+```bash
+npm start
+```
+
+Sirve el juego en `http://localhost:8130` (también vale abrir `index.html` con doble clic).
+
+```bash
+npm test
+```
+
+Juega partidas completas máquina contra máquina y comprueba las reglas.
+
+No hay dependencias ni paso de compilación. La arquitectura y las normas del proyecto están en
+[AGENTS.md](AGENTS.md); las decisiones, el estado y el historial, en [MEMORY.md](MEMORY.md).

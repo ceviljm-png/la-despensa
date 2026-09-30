@@ -21,6 +21,12 @@
     clasica: { name: 'Clásica', target: 10, ports: true, dev: true, playerTrade: false },
     completa: { name: 'Completa', target: 10, ports: true, dev: true, playerTrade: true },
   };
+  /* Nivel de los rivales que lleva la máquina (ver js/ai.js) */
+  const LEVELS = {
+    facil: { name: 'Fácil', text: 'Rivales despistados: juegan peor y aceptan cualquier cambio en el que no salgan perdiendo cartas.' },
+    normal: { name: 'Normal', text: 'Rivales atentos: aceptan un cambio si les compensa, y cuanto más ofreces, más fácil.' },
+    dificil: { name: 'Difícil', text: 'Rivales tacaños: nunca se quedan sin un recurso ni aceptan lo que ya les sobra.' },
+  };
   const DEV_INFO = {
     chef: { name: 'Chef', text: 'Mueve al Cítrico Gastronómico a otra parcela y roba una carta a un rival que tenga allí una huerta o bodega. Quien más chefs haya jugado (mínimo 3) tiene la Gran Brigada: 2 puntos.' },
     estrella: { name: 'Estrella', text: 'Vale 1 punto. Se mantiene en secreto hasta el final de la partida.' },
@@ -137,6 +143,7 @@
       return new Game({
         version: 1,
         mode: cfg.mode,
+        level: LEVELS[cfg.level] ? cfg.level : 'normal',
         hexes,
         ports: mode.ports ? GEO.portEdges.map((edge, i) => ({ edge, type: types[i] })) : [],
         critic: hexes.findIndex((h) => !h.res),
@@ -618,7 +625,7 @@
     }
   }
 
-  const api = { Game, GEO, RES, RES_INFO, COSTS, MODES, DEV_INFO, PIPS, emptyRes, total, resText };
+  const api = { Game, GEO, RES, RES_INFO, COSTS, MODES, LEVELS, DEV_INFO, PIPS, emptyRes, total, resText };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Despensa = api;
 })(typeof self !== 'undefined' ? self : this);

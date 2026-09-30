@@ -1,7 +1,7 @@
 /* La Despensa — interfaz */
 (function () {
   'use strict';
-  const { Game, GEO, RES, RES_INFO, COSTS, MODES, DEV_INFO, PIPS, emptyRes, total, resText } = window.Despensa;
+  const { Game, GEO, RES, RES_INFO, COSTS, MODES, LEVELS, DEV_INFO, PIPS, emptyRes, total, resText } = window.Despensa;
   const AI = window.DespensaAI;
 
   const SAVE_KEY = 'la-despensa.partida';
@@ -101,7 +101,8 @@
         players.push({ name: inp.value.trim() || inp.placeholder, ai: sel.value === 'ai', color: i });
       });
       const mode = document.querySelector('input[name="mode"]:checked').value;
-      g = Game.create({ mode, players });
+      const level = document.querySelector('input[name="level"]:checked').value;
+      g = Game.create({ mode, level, players });
       viewer = humans().length === 1 ? humans()[0] : -1;
       startGame();
     });
@@ -112,6 +113,9 @@
       viewer = data.viewer;
       startGame();
     });
+    const hint = () => { $('#level-hint').textContent = LEVELS[document.querySelector('input[name="level"]:checked').value].text; };
+    $('#levels').addEventListener('change', hint);
+    hint();
     $('#btn-rules').addEventListener('click', () => dialog(rulesHtml()));
   }
 
@@ -130,7 +134,7 @@
     seenSteal = g.s.lastSteal;
     $('#menu').hidden = true;
     $('#game').hidden = false;
-    $('#goal').textContent = MODES[g.s.mode].name + ' · a ' + MODES[g.s.mode].target + ' puntos';
+    $('#goal').textContent = MODES[g.s.mode].name + ' · a ' + MODES[g.s.mode].target + ' puntos · ' + LEVELS[g.s.level || 'normal'].name;
     pump();
   }
 
@@ -620,7 +624,7 @@
       } else {
         o += '<h3>Ofreces</h3><div class="steps">' + RES.map((r) => stepper('g', r, off.g[r])).join('') +
           '</div><h3>Pides</h3><div class="steps">' + RES.map((r) => stepper('w', r, off.w[r])).join('') + '</div>' +
-          `<p class="muted">${note || 'Los rivales aceptan si les compensa: cuanto más ofrezcas, más fácil.'}</p>
+          `<p class="muted">${note || LEVELS[s.level || 'normal'].text}</p>
           <div class="row"><button class="btn" data-do="close">Cerrar</button>
           <button class="btn primary" data-do="offer"${total(off.g) && total(off.w) ? '' : ' disabled'}>Proponer</button></div>`;
       }
@@ -672,7 +676,10 @@
   async function proposeTrade(p, give, get) {
     const s = g.s, n = s.players.length, offer = { from: p, give, get };
     const yes = [], no = [];
-    const WHY = { sin: 'no tiene lo que pides', lider: 'no quiere ayudarte, vas ganando', poco: 'pide algo más a cambio', no: 'lo rechaza' };
+    const why = (r) => ({
+      sin: 'no tiene lo que pides', lider: 'no quiere ayudarte, vas ganando', poco: 'pide algo más a cambio', no: 'lo rechaza',
+      ultima: 'no quiere quedarse sin ' + (r.res ? low(r.res) : 'cartas'), sobra: 'ya tiene ' + (r.res ? low(r.res) : 'eso') + ' de sobra',
+    }[r.why]);
     for (let d = 1; d < n; d++) {
       const q = (p + d) % n;
       let r;
@@ -680,7 +687,7 @@
       else if (!g.canAfford(q, get)) r = { ok: false, why: 'sin' };
       else r = (await askHuman(q, offer)) ? { ok: true } : { ok: false, why: 'no' };
       if (r.ok) yes.push(q);
-      else no.push(esc(s.players[q].name) + ' ' + WHY[r.why]);
+      else no.push(esc(s.players[q].name) + ' ' + why(r));
     }
     if (!yes.length) return 'Por ' + resText(give) + ' a cambio de ' + resText(get) + ': ' + no.join('; ') + '.';
     const q = await dialog(`<h2>${yes.length === 1 ? 'Hay trato' : '¿Con quién cambias?'}</h2>${offerHtml(offer, 'Das', 'Recibes')}
