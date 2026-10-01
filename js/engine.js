@@ -148,7 +148,7 @@
         ports: mode.ports ? GEO.portEdges.map((edge, i) => ({ edge, type: types[i] })) : [],
         critic: hexes.findIndex((h) => !h.res),
         players: cfg.players.map((p, i) => ({
-          name: p.name, ai: !!p.ai, color: p.color === undefined ? i : p.color,
+          name: p.name, ai: !!p.ai, color: p.color === undefined ? i : p.color, device: p.device || null,
           res: emptyRes(), dev: [], chefs: 0, roads: 15, huertas: 5, bodegas: 4, road: 0,
         })),
         builds: Array(GEO.verts.length).fill(null),

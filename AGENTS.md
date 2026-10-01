@@ -6,8 +6,9 @@ El contexto de producto, las decisiones ya tomadas y el historial están en [MEM
 ## Qué es
 
 Juego de estrategia por turnos al estilo de los juegos de colonizar una isla, con temática gastronómica.
-Es una app web instalable (PWA) que funciona igual en Android y en macOS. No tiene servidor ni cuentas:
-todo ocurre en el navegador y la partida se guarda en `localStorage`.
+Es una app web instalable (PWA) que funciona igual en Android y en macOS. No tiene servidor propio ni cuentas:
+todo ocurre en el navegador y la partida se guarda en `localStorage`. Se juega en un dispositivo (pasándolo)
+o **en red**, cada persona con el suyo, mediante salas con código de 4 letras.
 
 - Publicado en: https://ceviljm-png.github.io/la-despensa/
 - Repositorio: https://github.com/ceviljm-png/la-despensa (rama `main`, servida con GitHub Pages)
@@ -19,8 +20,8 @@ todo ocurre en el navegador y la partida se guarda en `localStorage`.
 | Comprobar las reglas (partidas máquina contra máquina) | `npm test` — equivale a `node test/sim.js [partidas]` |
 | Servir el juego en local, puerto 8130 | `npm start` — equivale a `python3 serve.py [puerto]` |
 
-No hay dependencias, ni paso de compilación, ni empaquetador. Hace falta Node solo para las pruebas
-y Python 3 solo para el servidor local.
+No hay paso de compilación ni empaquetador. La única dependencia es PeerJS, copiada tal cual en `js/vendor/`.
+Hace falta Node solo para las pruebas y Python 3 solo para el servidor local.
 
 ## Estructura
 
@@ -29,7 +30,9 @@ index.html              Página única: iconos SVG (<symbol>), menú de inicio y
 css/style.css           Todos los estilos, incluido el tablero SVG y los diálogos
 js/engine.js            Reglas y estado de la partida. Sin DOM: también corre en Node
 js/ai.js                Decisiones de los rivales que lleva la máquina. Sin DOM
-js/ui.js                Interfaz: dibujo, entrada, diálogos, bucle de turnos y guardado
+js/ui.js                Interfaz: dibujo, entrada, diálogos, bucle de turnos, guardado y partidas en red
+js/net.js               Salas en red (anfitrión e invitados) sobre PeerJS. Sin DOM. Igual que en Isla Jurásica
+js/vendor/peerjs.min.js PeerJS 1.5.5 (MIT, licencia en PEERJS-LICENSE), sin modificar
 sw.js                   Service worker: red primero, copia guardada si no hay red
 manifest.webmanifest    Datos de instalación de la PWA
 icons/                  Icono de la app (SVG de origen y PNG de 192 y 512 px)
@@ -37,7 +40,7 @@ test/sim.js             Simulación de partidas completas con comprobación de i
 serve.py                Servidor estático para desarrollo
 ```
 
-Los tres scripts son clásicos (no módulos ES) y se cargan en este orden: `engine.js`, `ai.js`, `ui.js`.
+Los scripts son clásicos (no módulos ES) y se cargan en este orden: `vendor/peerjs.min.js`, `net.js`, `engine.js`, `ai.js`, `ui.js`.
 Es deliberado: así el juego también funciona abriendo `index.html` con doble clic (`file://`).
 `engine.js` expone `window.Despensa` y `ai.js` expone `window.DespensaAI`; en Node se exportan con `module.exports`.
 
@@ -68,6 +71,27 @@ Es deliberado: así el juego también funciona abriendo `index.html` con doble c
   Toda acción de una persona termina en `afterAction()`, que vuelve a llamar a `pump()`.
 - El tablero se redibuja entero como una cadena SVG en cada `render()`. Los clics se resuelven por delegación con `data-v`, `data-e` y `data-h`.
 - `viewer` es el jugador cuya mano se muestra. Con varias personas se pone a `-1` mientras se pasa el dispositivo.
+  En red, `viewer` es siempre el asiento de este dispositivo.
+- `local(p)`: el jugador `p` es una persona que juega en este dispositivo.
+- Toda jugada pasa por `exec(orden, args)` → `apply(asiento, orden, args)`, que comprueba que quien la manda puede hacerla.
+
+### Partidas en red (`js/net.js` y la parte final de `js/ui.js`)
+
+- **El anfitrión manda**: su dispositivo tiene la partida de verdad, ejecuta el motor y las máquinas, y guarda.
+  Cada vez que cambia el estado lo manda entero a los invitados (`sync()` dentro de `render()`).
+- **Los invitados** tienen una copia (`adopt()`) y envían sus jugadas como `{ t: 'act', cmd, args }`.
+  Contestan en su dispositivo lo que les toca: descartar con un 7 y elegir a quién robar (`prompts()`),
+  aceptar ofertas y elegir con quién cambiar (mensaje `ask` con `kind: 'offer' | 'pick'`).
+- Cada dispositivo tiene un identificador fijo (`Net.deviceId`); cada asiento humano lo guarda en `players[i].device`
+  (no en `dev`, que son las cartas de cocina). Así, quien se desconecta recupera su asiento al volver.
+- El anfitrión valida asiento, orden y números antes de pasarlos al motor, que vuelve a validar.
+- Las manos de los demás viajan en el estado: la interfaz solo enseña la tuya, pero no es secreto ante alguien que
+  abra las herramientas del navegador. Es un juego entre amigos; no se ha querido complicar.
+- Conexión: PeerJS usa su servidor público gratuito (0.peerjs.com) solo para encontrarse; los datos van directos
+  por WebRTC, con STUN público y **sin TURN** (los de PeerJS ya no existen). En redes muy cerradas puede no conectar.
+- Si el anfitrión cierra la app, la partida se para; al reabrirla («Reabrir la sala») recupera el mismo código y los
+  invitados se reconectan solos. Si se va un invitado, el anfitrión puede dejar que la máquina juegue por él.
+- Las salas se llaman `ladespensa-XXXX` en el servidor de PeerJS.
 
 ## Normas
 
@@ -77,7 +101,8 @@ Es deliberado: así el juego también funciona abriendo `index.html` con doble c
   Los identificadores internos (`critic`, `i-critico`) no se renombran.
 - **Proyecto independiente**: el juego no se relaciona con ningún negocio ni con otros proyectos del propietario.
   No añadir nombres de empresas, personas, marcas, correos ni enlaces ajenos al juego, ni en el código ni en la documentación ni en los commits.
-- **Sin dependencias ni compilación**. No añadir frameworks, empaquetadores ni librerías.
+- **Sin dependencias ni compilación**. No añadir frameworks, empaquetadores ni librerías. La excepción es PeerJS,
+  copiado en `js/vendor/` sin modificar (para actualizarlo se copia `dist/peerjs.min.js` del paquete de npm).
 - **El motor y la máquina no tocan el DOM.** Toda regla nueva va en `engine.js` y debe poder simularse en Node.
 - **Seguridad**: todo texto que venga del usuario (nombres de jugador) pasa por `esc()` antes de entrar en `innerHTML`.
 - **Almacenamiento**: `localStorage` siempre dentro de `try/catch`; el juego debe funcionar aunque falle.
@@ -91,7 +116,9 @@ Es deliberado: así el juego también funciona abriendo `index.html` con doble c
 
 1. `npm test` termina en `OK` (recorre los tres niveles, los tres tipos de partida y de 2 a 4 jugadores).
 2. Probado a mano en el navegador el flujo afectado, sin errores en la consola.
-3. Si cambian archivos que la app necesita sin conexión, están en la lista `FILES` de `sw.js`.
+3. Si se toca la red: probar con dos navegadores con almacenamiento separado (por ejemplo `127.0.0.1` y `localhost`)
+   crear sala, unirse, jugar con un 7 y un cambio, recargar el invitado y recargar el anfitrión.
+4. Si cambian archivos que la app necesita sin conexión, están en la lista `FILES` de `sw.js` (y sube `CACHE`).
 
 ## Publicación
 

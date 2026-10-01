@@ -9,10 +9,10 @@ Las instrucciones de trabajo están en [AGENTS.md](AGENTS.md). Este archivo se a
 |---|---|
 | Qué es | Juego de estrategia por turnos sobre una isla de 19 parcelas, con temática gastronómica |
 | Plataformas | Android y macOS, como app web instalable (PWA) |
-| Jugadores | De 2 a 4; cada uno es una persona (pasando el dispositivo) o la máquina |
+| Jugadores | De 2 a 4; cada uno es una persona (pasando el dispositivo o en red, cada una con su móvil) o la máquina |
 | Dónde se juega | https://ceviljm-png.github.io/la-despensa/ |
 | Código | https://github.com/ceviljm-png/la-despensa (público, rama `main`) |
-| Versión | 1.1.0 |
+| Versión | 1.2.0 |
 | Creado | 30 de septiembre de 2026 |
 
 ## Decisiones tomadas
@@ -20,7 +20,9 @@ Las instrucciones de trabajo están en [AGENTS.md](AGENTS.md). Este archivo se a
 | Decisión | Motivo |
 |---|---|
 | App web instalable en lugar de apps nativas | Un solo juego para Android y Mac, sin tiendas ni compilación |
-| Contra la máquina y pasando el dispositivo; sin juego en línea | El juego en línea exige un servidor y complica mucho el proyecto |
+| Contra la máquina y pasando el dispositivo; sin juego en línea | Decisión inicial; cambiada en la 1.2.0 |
+| Partidas en red con conexión directa (WebRTC con PeerJS), sin cuentas | El propietario pidió jugar en varios dispositivos a la vez; se eligió lo gratis y sin configurar frente a un servidor (Firebase) |
+| En red, una persona por dispositivo y máquinas para rellenar huecos | Elección del propietario; las máquinas las lleva quien crea la sala |
 | Tres tipos de partida a elegir al empezar | El propietario quiso ofrecer las tres variantes en vez de escoger una |
 | Temática gastronómica, con nombre y arte propios | Identidad propia; no se usan nombres ni ilustraciones de juegos comerciales |
 | La ficha que bloquea se llama «Cítrico Gastronómico» | Nombre elegido por el propietario; la grafía «Cítrico» es intencionada |
@@ -84,7 +86,10 @@ La dificultad solo afecta a los cambios en la partida Completa; en Sencilla y Cl
   (colocación inicial, dados, descartes y robo con el 7, construcción, comercio con la banca y con rivales,
   cartas de cocina, paso de dispositivo, fin de partida, guardado y continuación).
 - **Sin comprobar**: instalación en un teléfono Android real y como app en el Mac.
-- **No hay**: juego en línea, sonido, tutorial guiado, estadísticas ni traducciones.
+- **Partidas en red** (1.2.0): comprobadas con tres navegadores a la vez con un transporte simulado: sala, partida
+  entera, descartes simultáneos, robos, cambios propuestos por invitados y por máquinas, recarga de invitado y de anfitrión.
+  La conexión WebRTC real no se ha podido probar en el equipo de desarrollo (una VPN la bloquea): falta probarla con móviles.
+- **No hay**: sonido, tutorial guiado, estadísticas ni traducciones.
 
 ## Limitaciones conocidas
 
@@ -92,6 +97,8 @@ La dificultad solo afecta a los cambios en la partida Completa; en Sencilla y Cl
 - La máquina solo propone cambios de 1 carta por 1, como mucho una vez por turno.
 - Solo Chef puede jugarse antes de tirar los dados; el resto de cartas de cocina, después.
 - El estado guardado no tiene migraciones: una partida guardada con una versión muy antigua podría no continuar.
+- En red no hay servidor TURN: en redes muy cerradas (algunas de datos móviles) la conexión directa puede fallar.
+- En red, si quien creó la sala cierra la app, la partida se para hasta que vuelva.
 
 ## Ideas pendientes
 
@@ -101,6 +108,12 @@ La dificultad solo afecta a los cambios en la partida Completa; en Sencilla y Cl
 - Un tutorial de primera partida.
 
 ## Historial
+
+### 1.2.0 — 1 de octubre de 2026
+- Partidas en red: crear sala con código de 4 letras, unirse con el código o con un enlace, cada uno ve solo su mano.
+- Reconexión automática, reabrir la sala tras cerrar la app y que la máquina juegue por quien se ha ido.
+- Corregido: sin conexión, el service worker podía devolver la página en lugar de un script que faltaba.
+- Corregido: en el móvil, un título largo podía ensanchar la pantalla.
 
 ### 1.1.0 — 30 de septiembre de 2026
 - Niveles de dificultad Fácil, Normal y Difícil, a elegir al empezar.

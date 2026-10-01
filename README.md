@@ -19,6 +19,9 @@ Una vez instalada funciona sin conexión.
 De 2 a 4 jugadores; cada uno puede ser una persona (pasando el dispositivo) o la máquina.
 La partida se guarda sola y se puede continuar desde el inicio.
 
+**En red:** cada persona con su móvil. Una crea una sala y las demás se unen con el código de 4 letras
+(o con el enlace que se comparte). Cada uno ve solo su mano; los huecos se pueden rellenar con máquinas.
+
 | Tipo de partida | Sencilla | Clásica | Completa |
 |---|---|---|---|
 | Puntos para ganar | 8 | 10 | 10 |
