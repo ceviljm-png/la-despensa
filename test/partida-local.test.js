@@ -118,8 +118,8 @@ describe('RF-10 · el service worker', () => {
   });
 
   test('al activarse borra las cachés antiguas y toma el control', async () => {
-    const { CACHE, almacen, llamadas, evento } = cargarSW({ guardado: { 'la-despensa-v1': { 'index.html': 'vieja' }, 'la-despensa-v2': { 'index.html': 'actual' } } });
-    assert.equal(CACHE, 'la-despensa-v2');
+    const { CACHE, almacen, llamadas, evento } = cargarSW({ guardado: { 'la-despensa-v2': { 'index.html': 'vieja' }, 'la-despensa-v3': { 'index.html': 'actual' } } });
+    assert.equal(CACHE, 'la-despensa-v3');
     await evento('activate').espera;
     assert.deepEqual(Object.keys(almacen), [CACHE]);
     assert.equal(llamadas.claim, 1);
@@ -139,13 +139,13 @@ describe('RF-10 · el service worker', () => {
   });
 
   test('sin red, devuelve la copia guardada, aunque la dirección lleve «?…»', async () => {
-    const { evento } = cargarSW({ red: sinRed, guardado: { 'la-despensa-v2': { 'js/ui.js': 'copia de ui' } } });
+    const { evento } = cargarSW({ red: sinRed, guardado: { 'la-despensa-v3': { 'js/ui.js': 'copia de ui' } } });
     const r = await evento('fetch', pedir('js/ui.js?v=3')).respuesta;
     assert.equal(await r.text(), 'copia de ui');
   });
 
   test('sin red y sin copia: una página recibe la de inicio; cualquier otro archivo, un error (nunca la página)', async () => {
-    const { evento } = cargarSW({ red: sinRed, guardado: { 'la-despensa-v2': { 'index.html': 'la página de inicio' } } });
+    const { evento } = cargarSW({ red: sinRed, guardado: { 'la-despensa-v3': { 'index.html': 'la página de inicio' } } });
     const pagina = await evento('fetch', pedir('partida', { mode: 'navigate' })).respuesta;
     assert.equal(await pagina.text(), 'la página de inicio');
     const script = await evento('fetch', pedir('js/nuevo.js')).respuesta;

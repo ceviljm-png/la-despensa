@@ -22,7 +22,7 @@ Los agentes del kit SDD actualizan esta sección al terminar cada fase.
 - Adopción (`/sdd-adopt`, 10 de octubre de 2026): fases A, B y C aprobadas (10 specs de lo que ya existe, todas «implementada»);
   fase D aprobada: la red de seguridad son tests de caracterización por spec, pendientes de `/sdd-plan`. Adopción terminada.
 - Constitución: aprobada (`docs/constitution.md`, 6 principios)
-- Spec activa: ninguna. **Red de seguridad terminada** (10 de octubre de 2026): siguiente, los cambios pendientes con `/sdd-change`.
+- Spec activa: ninguna (siguiente `/sdd-change`: 007)
 
 | Spec | Estado | Tareas | Notas |
 |------|--------|--------|-------|
@@ -32,20 +32,18 @@ Los agentes del kit SDD actualizan esta sección al terminar cada fase.
 | 003-maquina-ofertas | implementada (aprobada) | 4/4 | Red de seguridad hecha: `test/maquina-ofertas.test.js` (22 tests, todo automático). Ingeniería inversa; sin dudas |
 | 004-maquina-turno | implementada (aprobada) | 6/6 | Red de seguridad hecha: `test/maquina-turno.test.js` (28 tests); pausas medidas a mano. Ingeniería inversa; sin dudas |
 | 005-red-salas | implementada (aprobada) | 4/4 | Red de seguridad hecha: `test/red-salas.test.js` (19 tests, con PeerJS de mentira en `test/fake-peer.js`); a mano solo lo que no necesita dos dispositivos — lo demás pendiente de probar con móviles. Ingeniería inversa; pendiente `/sdd-change`: relevo del anfitrión en la sala de espera y nombres únicos |
-| 006-red-partida | implementada (aprobada) | – | Ingeniería inversa; pendiente `/sdd-change`: escapar datos del anfitrión, rechazar órdenes heredadas y órdenes sin número |
+| 006-red-partida | implementada | 5/5 | Cambio de seguridad hecho (10 oct 2026): `js/check.js` comprueba órdenes (RF-4) y estado (RF-11); `test/red-partida.test.js` (13 tests) |
 | 007-partida-local | implementada (aprobada) | 4/4 | Red de seguridad hecha: `test/partida-local.test.js` (9 tests: guardado y service worker en Node); el resto a mano. Ingeniería inversa; pendiente `/sdd-change`: al menos una persona y confirmar antes de sobrescribir la partida guardada |
 | 008-cartas-de-cocina | implementada (aprobada) | 5/5 | Red de seguridad hecha: `test/cartas.test.js` (21 tests). Ingeniería inversa; sin dudas |
 | 009-tablero-y-preparacion | implementada (aprobada) | 8/8 | Ingeniería inversa; sin dudas. Red de seguridad hecha: `test/tablero.test.js` (33 tests) |
 
-**Red de seguridad (terminada el 10 de octubre de 2026).** 200 tests en `npm test` (más la simulación), uno o varios
+**Red de seguridad (terminada el 10 de octubre de 2026).** 213 tests en `npm test` (200 de la red de seguridad y 13 de la spec 006) (más la simulación), uno o varios
 archivos por spec en `test/`, con utilidades en `test/helpers.js` y un PeerJS de mentira en `test/fake-peer.js`. Cada spec
-tiene en su `tasks.md` el resultado de la comprobación a mano. La 006 no se ha caracterizado: su validación de órdenes
-está dentro de `ui.js` y se hará dentro de su `/sdd-change`. Pendiente sin poder probar en este equipo: la conexión
+tiene en su `tasks.md` el resultado de la comprobación a mano. La 006 se cubrió dentro de su `/sdd-change`, al sacar la
+validación de `ui.js` a `js/check.js`. Pendiente sin poder probar en este equipo: la conexión
 real entre dos dispositivos (spec 005) y la instalación en Android y Mac (spec 007).
 
-**Siguiente paso.** Los cambios pendientes con `/sdd-change`, en este orden: 006 (seguridad: escapar los datos del
-anfitrión y rechazar órdenes raras o sin número; antes, sacar la validación de órdenes de `ui.js` y caracterizarla),
-007 (al menos una persona; confirmar antes de sobrescribir la partida guardada), 005 (relevo del anfitrión en la sala de
+**Siguiente paso.** Los cambios pendientes con `/sdd-change`, en este orden (la 006 ya está hecha): 007 (al menos una persona; confirmar antes de sobrescribir la partida guardada), 005 (relevo del anfitrión en la sala de
 espera; nombres únicos), 002 (texto de rechazo distinto aunque se repita la oferta), 000 (aviso de banca corta; aviso de
 robo al recibir el dispositivo) y 001 (el historial dice a quién se quita la Gran Ruta).
 A partir de aquí, todo cambio va por `/sdd-change` (sobre una spec existente) o por una spec nueva.
@@ -70,7 +68,8 @@ A partir de aquí, todo cambio va por `/sdd-change` (sobre una spec existente) o
 |---|---|
 | El motor nunca lanza excepciones por una jugada inválida: devuelve `false` | `engine.js`, todas las acciones |
 | Todo el estado de la partida es JSON plano en `g.s`; se guarda, se envía por la red y se recupera tal cual | `engine.js`, `ui.js` |
-| Cada orden se valida dos veces: `apply()` (asiento y argumentos) y después el motor | `ui.js` |
+| Cada orden se valida dos veces: `apply()` (asiento y jugada con sus números, `check.js`) y después el motor | `ui.js`, `check.js` |
+| El invitado ignora entero un estado con datos fuera de lo permitido y sigue con la copia anterior, sin avisar (decisión del propietario, 10 oct 2026) | `check.js`, `ui.js` |
 | Los números 6 y 8 nunca quedan en parcelas vecinas (se reparte de nuevo hasta que se cumple) | `engine.js` `numbersOk` |
 | Banca de 19 cartas por recurso; si no alcanza para todos, nadie recibe ese recurso (si es uno solo, recibe lo que quede) | `engine.js` `distribute` |
 | La victoria se comprueba solo para quien tiene el turno, también al empezarlo (cubre puntos ganados en turno ajeno) | `engine.js` `checkWin`, `endTurn` |
@@ -95,8 +94,6 @@ A partir de aquí, todo cambio va por `/sdd-change` (sobre una spec existente) o
 - Al pasar la Gran Ruta de un jugador a otro, el historial no dice a quién se le quita (spec 001, pendiente de `/sdd-change`).
 - El texto de ayuda de la banca dice siempre «Sin puerto, la banca cambia 4 cartas iguales por 1.», aunque se tengan puertos (visto en la spec 002; no es un requisito).
 - Al repetir exactamente la misma oferta, el texto de rechazo no cambia; el propietario quiere que cambie (spec 002, pendiente de `/sdd-change`).
-- El invitado mete en `innerHTML` sin escapar algunos datos del estado del anfitrión (tipo de parcela, número, puerto); solo los nombres pasan por `esc()`. Se corregirá (spec 006, pendiente de `/sdd-change`).
-- `apply()` no filtra los nombres heredados de `Object` (`toString`, `__proto__`) como orden, y convierte en 0 los números que faltan. Se corregirá (spec 006, pendiente de `/sdd-change`).
 - `.agents/skills/sdd` y `.claude/skills/sdd` son copias idénticas.
 
 ## Decisiones tomadas

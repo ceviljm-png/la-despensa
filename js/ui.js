@@ -4,6 +4,7 @@
   const { Game, GEO, RES, RES_INFO, COSTS, MODES, LEVELS, DEV_INFO, PIPS, emptyRes, total, resText } = window.Despensa;
   const AI = window.DespensaAI;
   const Net = window.Net;
+  const Check = window.DespensaCheck;
 
   const SAVE_KEY = 'la-despensa.partida';
   const PREF_KEY = 'la-despensa.ajustes';
@@ -652,31 +653,17 @@
   }
 
   /* ---------- órdenes ---------- */
-  const int = (x) => (Number.isInteger(Number(x)) ? Number(x) : -1);
-  function resMap(m) {
-    const out = emptyRes();
-    if (m && typeof m === 'object') RES.forEach((r) => { const v = Math.floor(Number(m[r]) || 0); out[r] = v > 0 ? Math.min(v, 99) : 0; });
-    return out;
-  }
-  /* Aplica una orden en el motor. seat = asiento de quien la manda (null si es de este dispositivo) */
+  /* Aplica una orden en el motor. seat = asiento de quien la manda (null si es de este dispositivo).
+     Solo pasan las jugadas del juego con sus números (js/check.js); después, el motor vuelve a validar */
   function apply(seat, cmd, args) {
-    const s = g.s, a = Array.isArray(args) ? args : [];
-    if (cmd === 'discard') {
-      const p = int(a[0]);
-      if (seat != null && p !== seat) return false;
-      return g.discard(p, resMap(a[1]));
+    const o = Check.order(cmd, args);
+    if (!o) return false;
+    if (o.cmd === 'discard') {
+      if (seat != null && o.args[0] !== seat) return false;
+      return g.discard(...o.args);
     }
-    if (seat != null && seat !== s.current) return false;
-    const arg1 = a[1];
-    const devArg = Array.isArray(arg1) ? arg1.slice(0, 2).map(String) : typeof arg1 === 'string' ? arg1 : undefined;
-    const CMDS = {
-      placeSetupHuerta: () => g.placeSetupHuerta(int(a[0])), placeSetupRoad: () => g.placeSetupRoad(int(a[0])),
-      buildHuerta: () => g.buildHuerta(int(a[0])), buildBodega: () => g.buildBodega(int(a[0])), buildRoad: () => g.buildRoad(int(a[0])),
-      moveCritic: () => g.moveCritic(int(a[0])), steal: () => g.steal(int(a[0])),
-      roll: () => g.roll(), endTurn: () => g.endTurn(), buyDev: () => g.buyDev(),
-      playDev: () => g.playDev(String(a[0]), devArg), bankTrade: () => g.bankTrade(String(a[0]), String(a[1]))
-    };
-    return CMDS[cmd] ? CMDS[cmd]() : false;
+    if (seat != null && seat !== g.s.current) return false;
+    return g[o.cmd](...o.args);
   }
   /* Orden desde este dispositivo: se aplica aquí o se manda al anfitrión */
   function exec(cmd, args) {
@@ -1138,7 +1125,7 @@
 
   async function hostTrade(dev, seat, m) {
     const a = Array.isArray(m.args) ? m.args : [];
-    const refused = await resolveProposal(seat, resMap(a[0]), resMap(a[1]));
+    const refused = await resolveProposal(seat, Check.resMap(a[0]), Check.resMap(a[1]));
     if (net) net.room.send(dev, { t: 'tradeRes', rid: m.rid, html: refused });
   }
 
@@ -1212,11 +1199,11 @@
         if (!g) return;
         const me = mySeat();
         let value = null;
-        const offer = m.offer && typeof m.offer === 'object' ? { from: int(m.offer.from), give: resMap(m.offer.give), get: resMap(m.offer.get) } : null;
+        const offer = m.offer && typeof m.offer === 'object' ? { from: Check.int(m.offer.from), give: Check.resMap(m.offer.give), get: Check.resMap(m.offer.get) } : null;
         if (offer && g.s.players[offer.from]) {
           if (m.kind === 'offer') value = await askHuman(me, offer);
           else if (m.kind === 'pick') {
-            const yes = (Array.isArray(m.yes) ? m.yes : []).map(int).filter((i) => g.s.players[i]);
+            const yes = (Array.isArray(m.yes) ? m.yes : []).map(Check.int).filter((i) => i !== null && g.s.players[i]);
             value = await dialog(`<h2>${yes.length === 1 ? 'Hay trato' : '¿Con quién cambias?'}</h2>${offerHtml(offer, 'Das', 'Recibes')}
               <div class="list">${yes.map((i) => `<button class="btn primary wide" data-close="${i}">
                 <i class="dot" style="--c:${colorOf(i)}"></i>Cambiar con ${esc(g.s.players[i].name)}</button>`).join('')}
@@ -1241,10 +1228,11 @@
     }
   }
 
-  /* Copia el estado que manda el anfitrión */
+  /* Copia el estado que manda el anfitrión. Si no tiene la forma permitida (js/check.js), se ignora entero y se sigue
+     con la copia anterior; si era el primero, el invitado sigue en la sala de espera */
   function adopt(m) {
     const s = m.s;
-    if (!s || !Array.isArray(s.players) || !MODES[s.mode] || !Array.isArray(s.hexes)) return;
+    if (!Check.state(s)) return;
     const first = !g;
     g = new Game(s);
     online = m.online && typeof m.online === 'object' ? m.online : {};

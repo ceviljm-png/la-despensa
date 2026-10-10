@@ -43,6 +43,7 @@ Hace falta Node solo para las pruebas y Python 3 solo para el servidor local.
 index.html              Página única: iconos SVG (<symbol>), menú de inicio y esqueleto de la partida
 css/style.css           Todos los estilos, incluido el tablero SVG y los diálogos
 js/engine.js            Reglas y estado de la partida. Sin DOM: también corre en Node
+js/check.js             Comprueba lo que llega de otro dispositivo: órdenes (anfitrión) y estado (invitado). Sin DOM
 js/ai.js                Decisiones de los rivales que lleva la máquina. Sin DOM
 js/ui.js                Interfaz: dibujo, entrada, diálogos, bucle de turnos, guardado y partidas en red
 js/net.js               Salas en red (anfitrión e invitados) sobre PeerJS. Sin DOM
@@ -54,9 +55,10 @@ test/sim.js             Simulación de partidas completas con comprobación de i
 serve.py                Servidor estático para desarrollo
 ```
 
-Los scripts son clásicos (no módulos ES) y se cargan en este orden: `vendor/peerjs.min.js`, `net.js`, `engine.js`, `ai.js`, `ui.js`.
+Los scripts son clásicos (no módulos ES) y se cargan en este orden: `vendor/peerjs.min.js`, `net.js`, `engine.js`, `check.js`, `ai.js`, `ui.js`.
 Es deliberado: así el juego también funciona abriendo `index.html` con doble clic (`file://`).
-`engine.js` expone `window.Despensa` y `ai.js` expone `window.DespensaAI`; en Node se exportan con `module.exports`.
+`engine.js` expone `window.Despensa`, `check.js` expone `window.DespensaCheck` y `ai.js` expone `window.DespensaAI`;
+en Node se exportan con `module.exports`.
 
 ## Arquitectura
 
@@ -88,12 +90,14 @@ Es deliberado: así el juego también funciona abriendo `index.html` con doble c
   En red, `viewer` es siempre el asiento de este dispositivo.
 - `local(p)`: el jugador `p` es una persona que juega en este dispositivo.
 - Toda jugada pasa por `exec(orden, args)` → `apply(asiento, orden, args)`, que comprueba que quien la manda puede hacerla.
+  Solo pasan las jugadas del juego con sus números enteros (`DespensaCheck.order`); después, el motor vuelve a validar.
 
 ### Partidas en red (`js/net.js` y la parte final de `js/ui.js`)
 
 - **El anfitrión manda**: su dispositivo tiene la partida de verdad, ejecuta el motor y las máquinas, y guarda.
   Cada vez que cambia el estado lo manda entero a los invitados (`sync()` dentro de `render()`).
 - **Los invitados** tienen una copia (`adopt()`) y envían sus jugadas como `{ t: 'act', cmd, args }`.
+  Un estado que no tiene la forma permitida (`DespensaCheck.state`) se ignora entero: se sigue con la copia anterior.
   Contestan en su dispositivo lo que les toca: descartar con un 7 y elegir a quién robar (`prompts()`),
   aceptar ofertas y elegir con quién cambiar (mensaje `ask` con `kind: 'offer' | 'pick'`).
 - Cada dispositivo tiene un identificador fijo (`Net.deviceId`); cada asiento humano lo guarda en `players[i].device`

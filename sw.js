@@ -1,6 +1,6 @@
 /* Deja el juego disponible sin conexión: red primero, copia guardada si no hay red */
-const CACHE = 'la-despensa-v2';
-const FILES = ['./', 'index.html', 'css/style.css', 'js/vendor/peerjs.min.js', 'js/net.js', 'js/engine.js', 'js/ai.js', 'js/ui.js',
+const CACHE = 'la-despensa-v3';
+const FILES = ['./', 'index.html', 'css/style.css', 'js/vendor/peerjs.min.js', 'js/net.js', 'js/engine.js', 'js/check.js', 'js/ai.js', 'js/ui.js',
   'manifest.webmanifest', 'icons/icon.svg', 'icons/icon-192.png', 'icons/icon-512.png'];
 
 self.addEventListener('install', (ev) => {
