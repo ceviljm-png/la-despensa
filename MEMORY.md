@@ -15,6 +15,90 @@ Las instrucciones de trabajo están en [AGENTS.md](AGENTS.md). Este archivo se a
 | Versión | 1.2.0 |
 | Creado | 30 de septiembre de 2026 |
 
+## Estado SDD
+
+Los agentes del kit SDD actualizan esta sección al terminar cada fase.
+
+- Adopción (`/sdd-adopt`, 10 de octubre de 2026): fases A, B y C aprobadas (10 specs de lo que ya existe, todas «implementada»);
+  fase D aprobada: la red de seguridad son tests de caracterización por spec, pendientes de `/sdd-plan`. Adopción terminada.
+- Constitución: aprobada (`docs/constitution.md`, 6 principios)
+- Spec activa: ninguna. **Red de seguridad terminada** (10 de octubre de 2026): siguiente, los cambios pendientes con `/sdd-change`.
+
+| Spec | Estado | Tareas | Notas |
+|------|--------|--------|-------|
+| 000-turno-y-citrico | implementada (aprobada) | 7/7 | Red de seguridad hecha: `test/turno.test.js` (28 tests). Ingeniería inversa; pendiente `/sdd-change`: aviso de banca corta y aviso de robo al recibir el dispositivo |
+| 001-construccion-y-puntos | implementada (aprobada) | 8/8 | Red de seguridad hecha: `test/construccion.test.js` (29 tests). Ingeniería inversa; pendiente `/sdd-change`: el historial dice a quién se quita la Gran Ruta |
+| 002-comercio | implementada (aprobada) | 5/5 | Red de seguridad hecha: `test/comercio.test.js` (11 tests); RF-9 y RNF-2 a mano. Ingeniería inversa; pendiente `/sdd-change`: el texto de rechazo debe cambiar aunque se repita la oferta |
+| 003-maquina-ofertas | implementada (aprobada) | 4/4 | Red de seguridad hecha: `test/maquina-ofertas.test.js` (22 tests, todo automático). Ingeniería inversa; sin dudas |
+| 004-maquina-turno | implementada (aprobada) | 6/6 | Red de seguridad hecha: `test/maquina-turno.test.js` (28 tests); pausas medidas a mano. Ingeniería inversa; sin dudas |
+| 005-red-salas | implementada (aprobada) | 4/4 | Red de seguridad hecha: `test/red-salas.test.js` (19 tests, con PeerJS de mentira en `test/fake-peer.js`); a mano solo lo que no necesita dos dispositivos — lo demás pendiente de probar con móviles. Ingeniería inversa; pendiente `/sdd-change`: relevo del anfitrión en la sala de espera y nombres únicos |
+| 006-red-partida | implementada (aprobada) | – | Ingeniería inversa; pendiente `/sdd-change`: escapar datos del anfitrión, rechazar órdenes heredadas y órdenes sin número |
+| 007-partida-local | implementada (aprobada) | 4/4 | Red de seguridad hecha: `test/partida-local.test.js` (9 tests: guardado y service worker en Node); el resto a mano. Ingeniería inversa; pendiente `/sdd-change`: al menos una persona y confirmar antes de sobrescribir la partida guardada |
+| 008-cartas-de-cocina | implementada (aprobada) | 5/5 | Red de seguridad hecha: `test/cartas.test.js` (21 tests). Ingeniería inversa; sin dudas |
+| 009-tablero-y-preparacion | implementada (aprobada) | 8/8 | Ingeniería inversa; sin dudas. Red de seguridad hecha: `test/tablero.test.js` (33 tests) |
+
+**Red de seguridad (terminada el 10 de octubre de 2026).** 200 tests en `npm test` (más la simulación), uno o varios
+archivos por spec en `test/`, con utilidades en `test/helpers.js` y un PeerJS de mentira en `test/fake-peer.js`. Cada spec
+tiene en su `tasks.md` el resultado de la comprobación a mano. La 006 no se ha caracterizado: su validación de órdenes
+está dentro de `ui.js` y se hará dentro de su `/sdd-change`. Pendiente sin poder probar en este equipo: la conexión
+real entre dos dispositivos (spec 005) y la instalación en Android y Mac (spec 007).
+
+**Siguiente paso.** Los cambios pendientes con `/sdd-change`, en este orden: 006 (seguridad: escapar los datos del
+anfitrión y rechazar órdenes raras o sin número; antes, sacar la validación de órdenes de `ui.js` y caracterizarla),
+007 (al menos una persona; confirmar antes de sobrescribir la partida guardada), 005 (relevo del anfitrión en la sala de
+espera; nombres únicos), 002 (texto de rechazo distinto aunque se repita la oferta), 000 (aviso de banca corta; aviso de
+robo al recibir el dispositivo) y 001 (el historial dice a quién se quita la Gran Ruta).
+A partir de aquí, todo cambio va por `/sdd-change` (sobre una spec existente) o por una spec nueva.
+
+## Áreas funcionales
+
+| Área | Dónde está | Pruebas |
+|---|---|---|
+| Tablero y preparación (reparto, puertos, colocación inicial) | `engine.js` | Simulación |
+| Turno, producción, 7, descarte, Cítrico y robo | `engine.js` | Simulación |
+| Construcción, puntos, Gran Ruta, Gran Brigada y victoria | `engine.js` | Simulación |
+| Cartas de cocina | `engine.js` | Simulación |
+| Comercio con la banca, puertos y entre jugadores | `engine.js`, diálogo en `ui.js` | Simulación (solo el motor) |
+| Máquina: jugar el turno y valorar ofertas por nivel | `ai.js` | Simulación (sin casos concretos por nivel) |
+| Partida en un dispositivo: menú, pasar el dispositivo, diálogos, guardado | `ui.js`, `index.html`, `style.css` | A mano |
+| Partidas en red | `net.js`, final de `ui.js` | A mano |
+| PWA y uso sin conexión | `sw.js`, `manifest.webmanifest` | A mano |
+
+## Decisiones que se deducen del código
+
+| Decisión | Dónde |
+|---|---|
+| El motor nunca lanza excepciones por una jugada inválida: devuelve `false` | `engine.js`, todas las acciones |
+| Todo el estado de la partida es JSON plano en `g.s`; se guarda, se envía por la red y se recupera tal cual | `engine.js`, `ui.js` |
+| Cada orden se valida dos veces: `apply()` (asiento y argumentos) y después el motor | `ui.js` |
+| Los números 6 y 8 nunca quedan en parcelas vecinas (se reparte de nuevo hasta que se cumple) | `engine.js` `numbersOk` |
+| Banca de 19 cartas por recurso; si no alcanza para todos, nadie recibe ese recurso (si es uno solo, recibe lo que quede) | `engine.js` `distribute` |
+| La victoria se comprueba solo para quien tiene el turno, también al empezarlo (cubre puntos ganados en turno ajeno) | `engine.js` `checkWin`, `endTurn` |
+| Las máquinas solo proponen cambios 1 por 1 y como mucho una vez por turno | `ai.js` |
+| En Fácil la máquina suma mucho azar (`noise` = 4 frente a 0,3) a sus valoraciones | `ai.js` |
+| El historial de la partida guarda las 150 últimas entradas y muestra 40 | `engine.js`, `ui.js` |
+| En red, el anfitrión espera la respuesta de un invitado 90 s; el invitado espera la de una propuesta 120 s | `ui.js` |
+| Un invitado se considera caído tras 15 s sin mensajes (latido cada 4 s) | `net.js` |
+| El menú permite una partida solo con máquinas (se juega sola). **El propietario no lo quiere** (10 oct 2026): pendiente de cambio | `ui.js` `initMenu` |
+
+## Deuda técnica
+
+- `ui.js` (unas 1.400 líneas) y `net.js` no tienen pruebas automáticas.
+- La simulación usa `Math.random` sin semilla: si falla, no se puede reproducir.
+- Ninguna regla concreta tiene un test propio (Gran Ruta, descarte, puertos, cartas recién compradas, `AI.judge` por nivel).
+- El menú permite empezar una partida sin ninguna persona; el propietario quiere que siempre haya al menos una (pendiente de `/sdd-change` spec 007; la simulación seguirá usando partidas solo con máquinas).
+- Si el anfitrión sale de la sala de espera, los invitados reintentan para siempre; el propietario quiere que pase a ser anfitrión el invitado que más tiempo lleve en la sala (spec 005, pendiente de `/sdd-change`).
+- En una sala dos personas pueden llevar el mismo nombre; el propietario no lo quiere (spec 005, pendiente de `/sdd-change`).
+- Empezar una partida nueva sobrescribe sin avisar la guardada (incluida una en red); el propietario quiere que pida confirmación (spec 007, pendiente de `/sdd-change`).
+- Cuando la banca no alcanza y solo cobra un jugador, recibe menos sin aviso; se anotará en el historial (spec 000, pendiente de `/sdd-change`).
+- Con varias personas en un dispositivo, la víctima de un robo no se entera de qué le robaron; se le avisará al recibir el dispositivo (spec 000, pendiente de `/sdd-change`).
+- Al pasar la Gran Ruta de un jugador a otro, el historial no dice a quién se le quita (spec 001, pendiente de `/sdd-change`).
+- El texto de ayuda de la banca dice siempre «Sin puerto, la banca cambia 4 cartas iguales por 1.», aunque se tengan puertos (visto en la spec 002; no es un requisito).
+- Al repetir exactamente la misma oferta, el texto de rechazo no cambia; el propietario quiere que cambie (spec 002, pendiente de `/sdd-change`).
+- El invitado mete en `innerHTML` sin escapar algunos datos del estado del anfitrión (tipo de parcela, número, puerto); solo los nombres pasan por `esc()`. Se corregirá (spec 006, pendiente de `/sdd-change`).
+- `apply()` no filtra los nombres heredados de `Object` (`toString`, `__proto__`) como orden, y convierte en 0 los números que faltan. Se corregirá (spec 006, pendiente de `/sdd-change`).
+- `.agents/skills/sdd` y `.claude/skills/sdd` son copias idénticas.
+
 ## Decisiones tomadas
 
 | Decisión | Motivo |
@@ -92,6 +176,8 @@ La dificultad solo afecta a los cambios en la partida Completa; en Sencilla y Cl
 - **No hay**: sonido, tutorial guiado, estadísticas ni traducciones.
 
 ## Limitaciones conocidas
+
+- El navegador integrado de Claude no admite service workers: el uso sin conexión se comprueba en Chrome (MCP de Chrome DevTools).
 
 - En Sencilla y Clásica, los niveles Normal y Difícil son idénticos (no hay cambios entre jugadores).
 - La máquina solo propone cambios de 1 carta por 1, como mucho una vez por turno.

@@ -17,8 +17,22 @@ o **en red**, cada persona con el suyo, mediante salas con código de 4 letras.
 
 | Para | Comando |
 |---|---|
-| Comprobar las reglas (partidas máquina contra máquina) | `npm test` — equivale a `node test/sim.js [partidas]` |
+| Todas las pruebas (las que hay que pasar antes de dar algo por terminado) | `npm test` |
+| Solo los tests de caracterización | `node --test test/*.test.js` |
+| Solo la simulación (partidas máquina contra máquina) | `node test/sim.js [partidas]` — `node test/sim.js 20` para una prueba rápida |
 | Servir el juego en local, puerto 8130 | `npm start` — equivale a `python3 serve.py [puerto]` |
+
+`npm test` ejecuta dos cosas, en este orden, y termina con `OK` (unos 7 s):
+
+1. **Tests de caracterización** (`test/*.test.js`, con `node:test`, que viene con Node): fijan el comportamiento actual
+   regla a regla, con el nombre del RF de su spec (por ejemplo `test/tablero.test.js` → spec 009). Si alguno falla,
+   la simulación no llega a ejecutarse.
+2. **Simulación** (`test/sim.js`): 200 partidas en cada una de las 27 combinaciones (3 niveles × 3 tipos × 2-4
+   jugadores), comprobando invariantes después de cada jugada.
+
+`test/helpers.js` tiene las utilidades compartidas: controlar el azar (`withRandom`), crear partidas, colocar piezas
+y fijar manos a mano, recorrer la colocación inicial y comprobar invariantes.
+Solo cubren el motor y la máquina: la interfaz y la red se comprueban a mano en el navegador.
 
 No hay paso de compilación ni empaquetador. La única dependencia es PeerJS, copiada tal cual en `js/vendor/`.
 Hace falta Node solo para las pruebas y Python 3 solo para el servidor local.
@@ -31,7 +45,7 @@ css/style.css           Todos los estilos, incluido el tablero SVG y los diálog
 js/engine.js            Reglas y estado de la partida. Sin DOM: también corre en Node
 js/ai.js                Decisiones de los rivales que lleva la máquina. Sin DOM
 js/ui.js                Interfaz: dibujo, entrada, diálogos, bucle de turnos, guardado y partidas en red
-js/net.js               Salas en red (anfitrión e invitados) sobre PeerJS. Sin DOM. Igual que en Isla Jurásica
+js/net.js               Salas en red (anfitrión e invitados) sobre PeerJS. Sin DOM
 js/vendor/peerjs.min.js PeerJS 1.5.5 (MIT, licencia en PEERJS-LICENSE), sin modificar
 sw.js                   Service worker: red primero, copia guardada si no hay red
 manifest.webmanifest    Datos de instalación de la PWA
@@ -92,6 +106,21 @@ Es deliberado: así el juego también funciona abriendo `index.html` con doble c
 - Si el anfitrión cierra la app, la partida se para; al reabrirla («Reabrir la sala») recupera el mismo código y los
   invitados se reconectan solos. Si se va un invitado, el anfitrión puede dejar que la máquina juegue por él.
 - Las salas se llaman `ladespensa-XXXX` en el servidor de PeerJS.
+
+## Flujo de desarrollo (SDD)
+
+El proyecto sigue desarrollo guiado por especificaciones con el kit SDD (skill `sdd`, comandos `/sdd-*`
+y los agentes `coordinator`, `planner`, `implementer` y `reviewer` en `.claude/`).
+
+- Lee `docs/constitution.md` y la spec activa (`specs/NNN-*/`) antes de tocar código.
+- Si `docs/constitution.md` está PENDIENTE, lo primero es `/sdd-adopt`: el proyecto ya tenía código,
+  así que se documenta lo que existe sin cambiarlo. Ningún agente implementa nada mientras siga PENDIENTE.
+- Funcionalidades con entidad: flujo SDD completo con el agente `coordinator` (`claude --agent coordinator`).
+- Cambios sobre algo que ya tiene spec: `/sdd-change`. Cambios pequeños que no merecen spec: `/feature <descripción>`.
+- Al terminar cada fase, actualiza `MEMORY.md`.
+- Tests: `npm test` es el único comando de pruebas. Después de cada cambio, ejecútalo: prohibido avanzar con tests en rojo.
+- Si hay cambios visuales, verifica en el navegador (MCP de Chrome DevTools o el navegador integrado): abre la app,
+  prueba la funcionalidad, revisa la consola y comprueba la vista móvil (375 px).
 
 ## Normas
 

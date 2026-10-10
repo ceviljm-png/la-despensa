@@ -1,0 +1,10 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "la-despensa",
+      "url": "http://localhost:8130",
+      "port": 8130
+    }
+  ]
+}
