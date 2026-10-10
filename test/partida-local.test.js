@@ -159,3 +159,31 @@ describe('RF-10 · el service worker', () => {
     assert.notEqual(evento('fetch', pedir('js/ui.js')).respuesta, null, 'control: una petición propia sí');
   });
 });
+
+/* ---------- Cambio del 10 de octubre de 2026: RF-11 y RF-12 ---------- */
+const Check = require('../js/check.js');
+
+describe('RF-11 · Check.hasPerson · tiene que jugar al menos una persona', () => {
+  test('con alguna persona entre las plazas que juegan, sí; solo con máquinas o sin plazas, no', () => {
+    assert.equal(Check.hasPerson([{ ai: false }]), true);
+    assert.equal(Check.hasPerson([{ ai: true }, { ai: false }, { ai: true }]), true);
+    assert.equal(Check.hasPerson([{ ai: true }, { ai: true }]), false);
+    assert.equal(Check.hasPerson([{ ai: true }, { ai: true }, { ai: true }, { ai: true }]), false);
+    assert.equal(Check.hasPerson([]), false);
+  });
+});
+
+describe('RF-12 · Check.savedGame · si hay una partida guardada que se perdería', () => {
+  test('sin nada, con datos que no son una partida, de otra versión o terminada: no hay ninguna', () => {
+    for (const guardado of [null, undefined, 'texto', 5, {}, { s: null }, { s: { version: 2, phase: 'main' } }, { s: { version: 1, phase: 'over' } }]) {
+      assert.equal(Check.savedGame(guardado), null, JSON.stringify(guardado) ?? 'undefined');
+    }
+  });
+
+  test('una partida en curso sí, y si era en red se sabe de qué sala', () => {
+    assert.deepEqual(Check.savedGame({ s: { version: 1, phase: 'main' } }), { room: null });
+    assert.deepEqual(Check.savedGame({ s: { version: 1, phase: 'setup', net: { room: 'ABCD' } }, viewer: 0 }), { room: 'ABCD' });
+    const g = h.newGame();
+    assert.deepEqual(Check.savedGame(JSON.parse(JSON.stringify({ s: g.s, viewer: 0 }))), { room: null }, 'con una partida real');
+  });
+});

@@ -66,3 +66,36 @@ Navegador integrado, 375 px salvo lo indicado:
 - Consola del navegador integrado: solo los errores ya conocidos del service worker.
 
 No se ha probado la instalación como app en un teléfono Android ni en el Mac (ya constaba como pendiente en `MEMORY.md`).
+
+## Cambio del 10 de octubre de 2026 — RF-11 y RF-12
+
+- [x] **T5. Reglas `hasPerson` y `savedGame`.** RF-11, RF-12
+  - Tests en `test/partida-local.test.js` (en rojo); las dos funciones en `js/check.js`; descripción de `check.js` en
+    `AGENTS.md`.
+  - Hecho cuando: los tests pasan con `npm test` y los 213 anteriores siguen en verde.
+
+- [x] **T6. Aviso y confirmación en la interfaz.** RF-11, RF-12
+  - `index.html` (párrafo del aviso); `ui.js`: «Empezar partida» con `hasPerson` y `confirmarNueva`, el aviso se oculta
+    al cambiar las plazas, «Empezar la partida» de la sala de espera con `confirmarNueva`, `showMenu` con `savedGame`.
+  - Hecho cuando: `npm test` termina en `OK` y `ui.js` no tiene errores de sintaxis.
+
+- [x] **T7. Comprobación en el navegador y cierre.** RF-11, RF-12
+  - Las comprobaciones a mano del plan, a 375 px y en escritorio, sin errores en la consola. Anotar aquí el resultado;
+    spec en «implementada»; `MEMORY.md` al día.
+  - Hecho cuando: el resultado está anotado aquí, `MEMORY.md` está al día y `npm test` termina en `OK`.
+
+## Comprobación a mano (T7) — 10 de octubre de 2026
+
+Navegador integrado (375 px y escritorio):
+- **RF-11:** con las plazas «Máquina, Máquina, Máquina, No juega», «Empezar partida» no empieza y muestra en rojo «Tiene
+  que jugar al menos una persona.» bajo el botón, sin desplazamiento horizontal; al poner la 2.ª plaza como Persona el
+  aviso desaparece y se conserva todo lo elegido. **Correcto.**
+- **RF-12, sin partida guardada:** empieza directamente, sin diálogo. **Correcto.**
+- **RF-12, con una partida local guardada:** «¿Empezar otra partida? Ya tienes una partida sin terminar. Si empiezas
+  otra, se perderá.» con «Cancelar» y «Empezar otra» (343 px de ancho en el móvil); «Cancelar» deja la partida guardada
+  idéntica y «Continuar partida» sigue en el inicio; «Empezar otra» empieza la nueva y sustituye la guardada. **Correcto.**
+- **RF-12, con una partida en red guardada (sala KLMN):** el inicio ofrece «Reabrir la sala KLMN» y el diálogo añade «Era
+  la sala KLMN.». Crear una sala nueva no pide confirmación; en su sala de espera, «Empezar la partida» sí: «Cancelar»
+  deja la sala abierta con sus jugadores y la partida guardada intacta; «Empezar otra» empieza la partida en red
+  («… · sala AXTG») y la guardada pasa a ser la nueva. **Correcto.** (Con un PeerJS de mentira en la página.)
+- Consola: sin errores (salvo los ya conocidos del service worker del navegador integrado).

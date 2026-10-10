@@ -43,7 +43,7 @@ Hace falta Node solo para las pruebas y Python 3 solo para el servidor local.
 index.html              Página única: iconos SVG (<symbol>), menú de inicio y esqueleto de la partida
 css/style.css           Todos los estilos, incluido el tablero SVG y los diálogos
 js/engine.js            Reglas y estado de la partida. Sin DOM: también corre en Node
-js/check.js             Comprueba lo que llega de otro dispositivo: órdenes (anfitrión) y estado (invitado). Sin DOM
+js/check.js             Comprobaciones para la interfaz: órdenes y estado que llegan por la red, reglas del inicio. Sin DOM
 js/ai.js                Decisiones de los rivales que lleva la máquina. Sin DOM
 js/ui.js                Interfaz: dibujo, entrada, diálogos, bucle de turnos, guardado y partidas en red
 js/net.js               Salas en red (anfitrión e invitados) sobre PeerJS. Sin DOM

@@ -114,17 +114,23 @@
         inp.disabled = sel.value === 'off';
         sel.closest('.slot').classList.toggle('off', sel.value === 'off');
       });
+      $('#start-msg').hidden = true;
     };
     $('#slots').addEventListener('change', sync);
     sync();
 
-    $('#btn-start').addEventListener('click', () => {
+    $('#btn-start').addEventListener('click', async () => {
       const players = [];
       document.querySelectorAll('[data-type]').forEach((sel) => {
         if (sel.value === 'off') return;
         const i = Number(sel.dataset.type), inp = $(`[data-name="${i}"]`);
         players.push({ name: inp.value.trim() || inp.placeholder, ai: sel.value === 'ai', color: i });
       });
+      if (!Check.hasPerson(players)) {
+        $('#start-msg').hidden = false;
+        return;
+      }
+      if (!(await confirmarNueva())) return;
       const mode = document.querySelector('input[name="mode"]:checked').value;
       const level = document.querySelector('input[name="level"]:checked').value;
       leaveNet();
@@ -148,10 +154,10 @@
   function showMenu() {
     g = null;
     leaveNet();
-    const data = load(SAVE_KEY);
-    const ok = data && data.s && data.s.version === 1 && data.s.phase !== 'over';
-    $('#btn-continue').hidden = !ok;
-    if (ok) $('#btn-continue').textContent = data.s.net ? `Reabrir la sala ${data.s.net.room}` : 'Continuar partida';
+    const saved = Check.savedGame(load(SAVE_KEY));
+    $('#btn-continue').hidden = !saved;
+    if (saved) $('#btn-continue').textContent = saved.room ? `Reabrir la sala ${saved.room}` : 'Continuar partida';
+    $('#start-msg').hidden = true;
     const r = load(NET_KEY);
     $('#net-back').hidden = !r;
     if (r) $('#net-back').textContent = `Volver a la sala ${r.code}`;
@@ -161,6 +167,17 @@
     $('#menu').hidden = false;
     closeModals();
     releaseWake();
+  }
+
+  /* Antes de empezar una partida nueva: si hay otra guardada sin terminar, se perdería. Devuelve si se puede seguir */
+  async function confirmarNueva() {
+    const saved = Check.savedGame(load(SAVE_KEY));
+    if (!saved) return true;
+    const sala = saved.room ? ` Era la sala ${esc(saved.room)}.` : '';
+    const r = await dialog(`<h2>¿Empezar otra partida?</h2>
+      <p>Ya tienes una partida sin terminar. Si empiezas otra, se perderá.${sala}</p>
+      <div class="row"><button class="btn" data-close="no">Cancelar</button><button class="btn primary" data-close="yes">Empezar otra</button></div>`);
+    return r === 'yes';
   }
 
   async function resumeSaved() {
@@ -1312,7 +1329,7 @@
         lobbyChanged();
         break;
       }
-      case 'start': startNetGame(); break;
+      case 'start': confirmarNueva().then((seguir) => { if (seguir) startNetGame(); }); break;
       case 'leave':
         if (isHost()) net.room.broadcast({ t: 'end' });
         store(NET_KEY, null);

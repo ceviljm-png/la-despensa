@@ -1,5 +1,6 @@
-/* La Despensa — comprobaciones de lo que llega de otro dispositivo (sin DOM, también se ejecuta en Node).
-   El anfitrión comprueba las órdenes de los invitados y el invitado, el estado que le manda el anfitrión */
+/* La Despensa — comprobaciones sin DOM que usa la interfaz (también se ejecutan en Node para las pruebas).
+   Lo que llega de otro dispositivo: el anfitrión comprueba las órdenes de los invitados y el invitado, el estado que le
+   manda el anfitrión. Y las reglas del inicio: quién juega y si hay una partida guardada que se perdería */
 (function (root) {
   'use strict';
   const E = typeof module !== 'undefined' && module.exports ? require('./engine.js') : root.Despensa;
@@ -102,7 +103,19 @@
     }
   }
 
-  const api = { int, resMap, order, state };
+  /* ---------- inicio ---------- */
+  /* Tiene que jugar al menos una persona: plazas = las que juegan, cada una con { ai } */
+  const hasPerson = (plazas) => Array.isArray(plazas) && plazas.some((p) => p && !p.ai);
+
+  /* La partida guardada que se puede continuar (y que se perdería al empezar otra): null si no hay ninguna;
+     si la hay, { room } con el código de la sala si era una partida en red */
+  function savedGame(guardado) {
+    const s = guardado && typeof guardado === 'object' ? guardado.s : null;
+    if (!s || typeof s !== 'object' || s.version !== 1 || s.phase === 'over') return null;
+    return { room: s.net && typeof s.net.room === 'string' ? s.net.room : null };
+  }
+
+  const api = { int, resMap, order, state, hasPerson, savedGame };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DespensaCheck = api;
 })(typeof self !== 'undefined' ? self : this);

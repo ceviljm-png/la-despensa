@@ -1,11 +1,15 @@
 # Spec 007 — Partida en un dispositivo: inicio, pasar el dispositivo, guardado y app instalable
 
-Estado: implementada
+Estado: implementada (cambio del 10 de octubre de 2026: RF-11 y RF-12 nuevos).
 
 ## Contexto y objetivo
-Documenta, sin cambiarlo, cómo se prepara y se juega una partida en un solo dispositivo: la pantalla de inicio,
+Describe cómo se prepara y se juega una partida en un solo dispositivo: la pantalla de inicio,
 el paso del dispositivo entre personas, lo que se ve durante la partida, el guardado automático, el final de la
 partida y el funcionamiento como app instalable sin conexión.
+
+**Cambio (10 de octubre de 2026).** Dos decisiones del propietario: en una partida siempre juega al menos una persona
+(una partida solo de máquinas no tiene sentido para quien abre el juego), y empezar una partida nueva no puede borrar
+sin avisar la que había guardada (podía ser una partida en red que aún se podía reabrir).
 
 ## Usuarios
 - Una persona que juega sola contra la máquina.
@@ -33,6 +37,8 @@ partida y el funcionamiento como app instalable sin conexión.
 - RF-8: CUANDO se abre el menú de la partida, EL SISTEMA ofrece «Cómo se juega», «Máquina: normal / rápida» (que se recuerda), «Salir al inicio (la partida se guarda)» y «Seguir jugando».
 - RF-9: CUANDO alguien gana, EL SISTEMA muestra «¡<nombre> gana!» con la clasificación por puntos, contando las Estrellas, y deja elegir «Ver tablero» o «Nueva partida»; con la partida terminada, el panel de acciones solo ofrece «Nueva partida».
 - RF-10: CUANDO el juego se abre por `http` o `https`, EL SISTEMA se registra como app instalable que, tras la primera visita, funciona sin conexión: pide primero cada archivo a la red y, si no hay red, usa la copia guardada; si falta una página usa la de inicio, y si falta otro archivo devuelve un error en lugar de la página.
+- RF-11: SI se pulsa «Empezar partida» y ninguna de las plazas que juegan es una persona, ENTONCES EL SISTEMA no empieza la partida y muestra en el inicio «Tiene que jugar al menos una persona.».
+- RF-12: CUANDO se va a empezar una partida nueva (con «Empezar partida» en el inicio o con «Empezar la partida» en la sala de espera de quien crea la sala) y en el dispositivo hay una partida guardada sin terminar, EL SISTEMA pide confirmación con «Ya tienes una partida sin terminar. Si empiezas otra, se perderá.» (añadiendo «Era la sala XXXX.» si era una partida en red) y los botones «Cancelar» y «Empezar otra»; solo empieza la nueva si se elige «Empezar otra», y con «Cancelar» no cambia nada.
 
 ## Requisitos no funcionales
 - RNF-1: Si el dispositivo no permite guardar, el juego funciona igual, sin guardar.
@@ -45,22 +51,30 @@ partida y el funcionamiento como app instalable sin conexión.
 - Con «Ver tablero» la partida ya está borrada: si se cierra la app, no se puede volver a verla.
 - Con varias personas, si se reanuda una partida guardada mientras se pasaba el dispositivo, vuelve a pedir que se pase.
 - Una plaza en «No juega» deja su nombre desactivado.
+- Para RF-11 solo cuentan las plazas que juegan: «Persona, No juega…» con una sola persona es válido; «Máquina, Máquina, No juega, No juega» no.
+- Al cerrar el aviso de RF-11 (o en cuanto se pone una plaza como Persona) el inicio sigue con todo lo elegido: tipo, nivel, nombres y plazas.
+- Sin partida guardada, o con una de otra versión (que ya no se ofrece continuar), no se pide confirmación.
+- Una partida terminada no queda guardada (RF-7), así que tampoco pide confirmación.
+- Con «Cancelar», la partida guardada sigue intacta y «Continuar partida» la sigue ofreciendo; en la sala de espera, la sala sigue abierta con sus jugadores.
+- Si el dispositivo no permite guardar (RNF-1), nunca hay partida guardada y nunca se pide confirmación.
 
 ## Fuera de alcance
 - Reglas de cada jugada (specs 000 a 002) y cómo juega la máquina (specs 003 y 004).
 - Partidas en red (specs 005 y 006); el menú en red añade opciones propias.
 - Pantalla de reglas «Cómo se juega»: es un texto fijo.
+- Una partida solo de máquinas que ya estuviera guardada de antes del cambio: se puede seguir continuando.
+- El motor y la simulación de `npm test` siguen admitiendo partidas solo de máquinas (no pasan por el inicio).
+- Crear una sala o unirse a una no piden confirmación: no cambian la partida guardada hasta que empieza la partida (RF-12).
+- Invitados de una sala: nunca guardan la partida (spec 006), así que no se les pide confirmación.
 
 ## Criterios de finalización
 - Todos los RF comprobados a mano en el navegador, a 375 px y en escritorio, sin errores en la consola, incluido
   instalar la app, cortar la red y recargar (RF-10).
 - `npm test` termina en `OK`.
+- RF-11 y RF-12 tienen tests en `npm test` para la regla (cuándo falta una persona y cuándo hay que pedir confirmación)
+  y están comprobados a mano en el navegador, a 375 px y en escritorio.
 
 ## Dudas abiertas
-Ninguna. Resueltas el 10 de octubre de 2026 (decisiones del propietario que el código actual **no** cumple; se harán
-con `/sdd-change 007` y entonces se añadirán los RF):
-- **Partidas solo con máquinas** — hoy el inicio deja poner las 4 plazas como Máquina y la partida se juega sola
-  (`js/ui.js:98-133`). Decisión: siempre debe haber al menos una persona. La simulación de `npm test` seguirá usando
-  partidas solo con máquinas, porque no pasa por el inicio.
-- **Empezar encima de una partida guardada** — hoy se sobrescribe sin avisar, aunque sea una partida en red que se
-  podía reabrir (`js/ui.js:120-133`, `js/ui.js:63`). Decisión: debe pedir confirmación.
+Ninguna. Las dos decisiones del propietario del 10 de octubre de 2026 están en RF-11, RF-12 y los casos límite.
+Confirmado el mismo día: el aviso de RF-11 sale al pulsar «Empezar partida», y la confirmación de RF-12 se pide al
+empezar la partida nueva (no al crear la sala).
