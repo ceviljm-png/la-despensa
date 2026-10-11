@@ -12,7 +12,7 @@ Las instrucciones de trabajo están en [AGENTS.md](AGENTS.md). Este archivo se a
 | Jugadores | De 2 a 4; cada uno es una persona (pasando el dispositivo o en red, cada una con su móvil) o la máquina |
 | Dónde se juega | https://ceviljm-png.github.io/la-despensa/ |
 | Código | https://github.com/ceviljm-png/la-despensa (público, rama `main`) |
-| Versión | 1.2.0 |
+| Versión | 1.3.0 |
 | Creado | 30 de septiembre de 2026 |
 
 ## Estado SDD
@@ -186,6 +186,16 @@ La dificultad solo afecta a los cambios en la partida Completa; en Sencilla y Cl
 - Un tutorial de primera partida.
 
 ## Historial
+
+### 1.3.0 — 11 de octubre de 2026
+- Desarrollo guiado por especificaciones: constitución, 10 specs de lo que ya existía y 231 tests automáticos (`npm test`).
+- Seguridad en red: el anfitrión solo acepta jugadas del juego y el invitado ignora estados que no tienen la forma permitida.
+- Inicio: tiene que jugar al menos una persona, y se pide confirmación antes de borrar una partida guardada.
+- Sala de espera: si el anfitrión desaparece, la lleva el invitado que más tiempo lleva; no se admiten nombres repetidos.
+- Comercio: si se repite la misma oferta rechazada, el aviso lleva la cuenta de intentos.
+- Turno: el historial avisa cuando la banca no llega; con varias personas en un dispositivo, la víctima de un robo se
+  entera al recibirlo.
+- La Gran Ruta: el historial dice a quién se le quita.
 
 ### 1.2.0 — 1 de octubre de 2026
 - Partidas en red: crear sala con código de 4 letras, unirse con el código o con un enlace, cada uno ve solo su mano.
