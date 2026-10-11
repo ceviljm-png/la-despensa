@@ -29,6 +29,7 @@
   let uiMode = null;   // 'camino' | 'huerta' | 'bodega' mientras se elige dónde construir
   let busy = false;    // la máquina está jugando o hay un diálogo de turno abierto
   let seenSteal = null;
+  let stealAvisos = {};  // robos que la víctima aún no ha visto (varias personas en un dispositivo)
   let overShown = false;
   let diceKey = '';
   let devSeen = { viewer: -1, n: 0 };
@@ -207,6 +208,7 @@
     overShown = false;
     diceKey = '';
     seenSteal = g.s.lastSteal;
+    stealAvisos = {};
     devSeen = { viewer: -1, n: 0 };
     prompting = { discard: false, steal: false };
     lastTurnSeen = -1;
@@ -550,12 +552,16 @@
 
   function noteSteal() {
     const ls = g.s.lastSteal;
-    if (!ls || JSON.stringify(ls) === JSON.stringify(seenSteal)) return;
-    seenSteal = ls;
-    if (!RES_INFO[ls.res] || !g.s.players[ls.from] || !g.s.players[ls.to]) return;
+    const nuevo = ls && JSON.stringify(ls) !== JSON.stringify(seenSteal) && RES_INFO[ls.res] && g.s.players[ls.from] && g.s.players[ls.to] ? ls : null;
+    if (ls) seenSteal = ls;
     const name = (i) => esc(g.s.players[i].name);
-    if (ls.to === viewer) toast(`Robas ${icon(ls.res, 18)} a ${name(ls.from)}`);
-    else if (ls.from === viewer) toast(`${name(ls.to)} te roba ${icon(ls.res, 18)}`);
+    if (nuevo && nuevo.to === viewer) toast(`Robas ${icon(nuevo.res, 18)} a ${name(nuevo.from)}`);
+    else if (nuevo && nuevo.from === viewer) toast(`${name(nuevo.to)} te roba ${icon(nuevo.res, 18)}`);
+    if (net) return;
+    // Varias personas en este dispositivo: la víctima lo ve al recibirlo (spec 000, RF-12)
+    const r = Check.stealNotice(stealAvisos, nuevo, viewer, humans());
+    stealAvisos = r.avisos;
+    r.mostrar.forEach((x) => toast(`${name(x.to)} te robó ${icon(x.res, 18)} ${RES_INFO[x.res].name.toLowerCase()}`));
   }
 
   async function passDevice(i) {

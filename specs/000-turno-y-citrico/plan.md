@@ -83,3 +83,50 @@ Cada `describe` lleva el RF en el nombre. Al final de cada test que juega se lla
   esperado, se ve fallar el test y se restaura. Nunca se toca `js/` para provocarlo.
 - Cobertura: RF-1 a RF-8, RF-10 y RF-11 automáticos; RNF-1 con `checkInvariants`; RNF-2 porque todo corre en Node;
   RF-9 a mano.
+
+---
+
+# Cambio del 11 de octubre de 2026 — RF-3 modificado y RF-12 nuevo
+
+## Archivos
+
+| Archivo | Acción | Responsabilidad | RF |
+|---|---|---|---|
+| `js/engine.js` | modificar `distribute` | Con un solo receptor y la banca corta, anota «Solo quedaban…» o «No queda…» | RF-3 |
+| `js/check.js` | ampliar | Función pura `stealNotice(avisos, robo, viendo, personas)` | RF-12 |
+| `js/ui.js` | modificar `noteSteal` | Guarda los avisos de robo pendientes y los muestra cuando la víctima tiene el dispositivo | RF-12 |
+| `test/turno.test.js` | modificar y ampliar | Los dos tests de RF-3 con un solo receptor pasan a esperar el aviso; tests de `stealNotice` | RF-3, RF-12 |
+
+## Algoritmo
+
+```
+distribute, por recurso r con la banca corta y un solo receptor:                                       (RF-3)
+  n = banca[r]; recibe n
+  historial: n === 0 ? 'No queda <r> en la banca' : n === 1 ? 'Solo quedaba 1 de <r> en la banca' : 'Solo quedaban <n> de <r> en la banca'
+  (se anota antes de «J recibe …», igual que el aviso con varios receptores)
+
+stealNotice(avisos, robo, viendo, personas) → { avisos, mostrar }                                       (RF-12)
+  avisos = { víctima: [robos sin ver] }; personas = las personas que juegan en este dispositivo
+  si robo y robo.from ≠ viendo y robo.from ∈ personas → se añade a avisos[robo.from]
+  mostrar = avisos[viendo] (y se quita de avisos); si no hay, []
+```
+
+## Interfaz
+`noteSteal` (se llama en cada vuelta de `pump`, también después de pasar el dispositivo): si hay un robo nuevo, el
+aviso al momento de RF-9 sigue igual; además, sin red, `stealNotice` decide qué guardar y qué enseñar a quien tiene el
+dispositivo: un aviso «<ladrón> te robó <icono> <recurso>» por cada robo pendiente.
+
+## Decisiones
+
+| Decisión | Alternativa descartada | Por qué |
+|---|---|---|
+| Los avisos pendientes viven en la interfaz | Guardarlos en el estado de la partida | No cambia la forma de `g.s` (compatibilidad con partidas guardadas y con `DespensaCheck.state`); si se cierra la app, el historial ya dice quién robó |
+| El aviso de banca corta va en el motor | En la interfaz | Es historial de la partida: se guarda, se ve en red y se prueba en Node |
+
+## Estrategia de tests
+- `npm test`: RF-3 con un solo receptor — con 1 en la banca, «Solo quedaba 1 de …»; con 2, «Solo quedaban 2 de …»;
+  con 0, «No queda … en la banca». `stealNotice`: víctima que no está viendo → se guarda; víctima que está viendo, o
+  máquina → no; al pasar a ver la víctima → se muestran sus robos (dos si hubo dos) y se vacían.
+- A mano: Ana y Bea (personas) y Rosa (máquina) en un dispositivo; Rosa roba a Bea mientras tiene el dispositivo Ana;
+  al pasárselo a Bea aparece «Rosa te robó …». A 375 px y en escritorio.
+

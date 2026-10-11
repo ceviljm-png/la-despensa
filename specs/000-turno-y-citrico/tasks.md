@@ -56,3 +56,30 @@ la víctima con 3 vinos en una parcela del 8), cargadas en el navegador integrad
 - **Rosa roba a Ana (escritorio):** la máquina elige la parcela de Ana; aviso «Rosa te roba <icono de vino>», Ana
   pasa a 2 vinos y el historial dice «Rosa roba una carta a Ana». **Correcto.**
 - Consola: solo los errores ya conocidos del service worker del navegador integrado (uno por carga de página).
+
+## Cambio del 11 de octubre de 2026 — RF-3 y RF-12
+
+- [x] **T8. Aviso de banca corta con un solo receptor.** RF-3
+  - Tests de RF-3 en `test/turno.test.js` (en rojo) y el aviso en `distribute`.
+  - Hecho cuando: los tests pasan y `npm test` termina en `OK`.
+- [x] **T9. Regla `stealNotice` y aviso al recibir el dispositivo.** RF-12
+  - Tests (en rojo), la función en `js/check.js` y `noteSteal` en `js/ui.js`.
+  - Hecho cuando: los tests pasan, `ui.js` no tiene errores de sintaxis y `npm test` termina en `OK`.
+- [x] **T10. Comprobación en el navegador y cierre.** RF-3, RF-12
+  - El robo a Bea mientras tiene el dispositivo Ana, a 375 px y en escritorio; el aviso de banca en el historial;
+    anotar aquí el resultado; `MEMORY.md` al día.
+  - Hecho cuando: el resultado está anotado aquí y `npm test` termina en `OK`.
+
+### Resultado de la comprobación a mano (11 de octubre de 2026)
+
+Clásica con Ana y Bea (personas en este dispositivo) y Rosa (máquina); Rosa en su turno roba a Bea mientras el
+dispositivo lo tiene Ana:
+
+| Comprobación | RF | Resultado |
+|---|---|---|
+| Mientras lo tiene Ana, no sale ningún aviso (no es ni ladrona ni víctima); el historial dice «Rosa roba una carta a Bea» | RF-8, RF-12 | Correcto |
+| Al pasar a Bea («Ya lo tengo»), aparece «Rosa te robó <icono> vino» (375 px) y «Rosa te robó <icono> sal» en otra partida (escritorio) | RF-12 | Correcto |
+| Aviso de banca corta | RF-3 | En `npm test` (el texto va al historial del motor, que la interfaz pinta igual que el resto) |
+
+Consola: solo los errores ya conocidos del service worker del navegador integrado.
+

@@ -22,11 +22,11 @@ Los agentes del kit SDD actualizan esta sección al terminar cada fase.
 - Adopción (`/sdd-adopt`, 10 de octubre de 2026): fases A, B y C aprobadas (10 specs de lo que ya existe, todas «implementada»);
   fase D aprobada: la red de seguridad son tests de caracterización por spec, pendientes de `/sdd-plan`. Adopción terminada.
 - Constitución: aprobada (`docs/constitution.md`, 6 principios)
-- Spec activa: ninguna (002 terminada el 11 de octubre de 2026; la siguiente es 000-turno-y-citrico)
+- Spec activa: ninguna (000 terminada el 11 de octubre de 2026; la siguiente es 001-construccion-y-puntos)
 
 | Spec | Estado | Tareas | Notas |
 |------|--------|--------|-------|
-| 000-turno-y-citrico | implementada (aprobada) | 7/7 | Red de seguridad hecha: `test/turno.test.js` (28 tests). Ingeniería inversa; pendiente `/sdd-change`: aviso de banca corta y aviso de robo al recibir el dispositivo |
+| 000-turno-y-citrico | implementada | 10/10 | Red de seguridad: `test/turno.test.js`. Cambio hecho (11 oct 2026): aviso de banca corta con un solo receptor (RF-3) y aviso de robo a la víctima al recibir el dispositivo (RF-12, `check.js` `stealNotice`) |
 | 001-construccion-y-puntos | implementada (aprobada) | 8/8 | Red de seguridad hecha: `test/construccion.test.js` (29 tests). Ingeniería inversa; pendiente `/sdd-change`: el historial dice a quién se quita la Gran Ruta |
 | 002-comercio | implementada | 8/8 | Red de seguridad: `test/comercio.test.js`; RF-9 y RNF-2 a mano. Cambio hecho (11 oct 2026): si se repite el mismo rechazo, el aviso lleva la cuenta de intentos (RF-11, `check.js` `refusal`) |
 | 003-maquina-ofertas | implementada (aprobada) | 4/4 | Red de seguridad hecha: `test/maquina-ofertas.test.js` (22 tests, todo automático). Ingeniería inversa; sin dudas |
@@ -37,14 +37,13 @@ Los agentes del kit SDD actualizan esta sección al terminar cada fase.
 | 008-cartas-de-cocina | implementada (aprobada) | 5/5 | Red de seguridad hecha: `test/cartas.test.js` (21 tests). Ingeniería inversa; sin dudas |
 | 009-tablero-y-preparacion | implementada (aprobada) | 8/8 | Ingeniería inversa; sin dudas. Red de seguridad hecha: `test/tablero.test.js` (33 tests) |
 
-**Red de seguridad (terminada el 10 de octubre de 2026).** 225 tests en `npm test` (200 de la red de seguridad y 25 de los cambios) (más la simulación), uno o varios
+**Red de seguridad (terminada el 10 de octubre de 2026).** 230 tests en `npm test` (200 de la red de seguridad y 30 de los cambios) (más la simulación), uno o varios
 archivos por spec en `test/`, con utilidades en `test/helpers.js` y un PeerJS de mentira en `test/fake-peer.js`. Cada spec
 tiene en su `tasks.md` el resultado de la comprobación a mano. La 006 se cubrió dentro de su `/sdd-change`, al sacar la
 validación de `ui.js` a `js/check.js`. Pendiente sin poder probar en este equipo: la conexión
 real entre dos dispositivos (spec 005) y la instalación en Android y Mac (spec 007).
 
-**Siguiente paso.** Los cambios pendientes con `/sdd-change`, en este orden (006, 007, 005 y 002 ya están hechas): 000 (aviso de banca corta; aviso de
-robo al recibir el dispositivo) y 001 (el historial dice a quién se quita la Gran Ruta).
+**Siguiente paso.** Los cambios pendientes con `/sdd-change`, en este orden (006, 007, 005, 002 y 000 ya están hechas): 001 (el historial dice a quién se quita la Gran Ruta).
 A partir de aquí, todo cambio va por `/sdd-change` (sobre una spec existente) o por una spec nueva.
 
 ## Áreas funcionales
@@ -70,7 +69,7 @@ A partir de aquí, todo cambio va por `/sdd-change` (sobre una spec existente) o
 | Cada orden se valida dos veces: `apply()` (asiento y jugada con sus números, `check.js`) y después el motor | `ui.js`, `check.js` |
 | El invitado ignora entero un estado con datos fuera de lo permitido y sigue con la copia anterior, sin avisar (decisión del propietario, 10 oct 2026) | `check.js`, `ui.js` |
 | Los números 6 y 8 nunca quedan en parcelas vecinas (se reparte de nuevo hasta que se cumple) | `engine.js` `numbersOk` |
-| Banca de 19 cartas por recurso; si no alcanza para todos, nadie recibe ese recurso (si es uno solo, recibe lo que quede) | `engine.js` `distribute` |
+| Banca de 19 cartas por recurso; si no alcanza para todos, nadie recibe ese recurso (si es uno solo, recibe lo que quede y se anota «Solo quedaban…») | `engine.js` `distribute` |
 | La victoria se comprueba solo para quien tiene el turno, también al empezarlo (cubre puntos ganados en turno ajeno) | `engine.js` `checkWin`, `endTurn` |
 | Las máquinas solo proponen cambios 1 por 1 y como mucho una vez por turno | `ai.js` |
 | En Fácil la máquina suma mucho azar (`noise` = 4 frente a 0,3) a sus valoraciones | `ai.js` |
@@ -87,8 +86,6 @@ A partir de aquí, todo cambio va por `/sdd-change` (sobre una spec existente) o
 - `ui.js` (unas 1.400 líneas) y `net.js` no tienen pruebas automáticas.
 - La simulación usa `Math.random` sin semilla: si falla, no se puede reproducir.
 - Ninguna regla concreta tiene un test propio (Gran Ruta, descarte, puertos, cartas recién compradas, `AI.judge` por nivel).
-- Cuando la banca no alcanza y solo cobra un jugador, recibe menos sin aviso; se anotará en el historial (spec 000, pendiente de `/sdd-change`).
-- Con varias personas en un dispositivo, la víctima de un robo no se entera de qué le robaron; se le avisará al recibir el dispositivo (spec 000, pendiente de `/sdd-change`).
 - Al pasar la Gran Ruta de un jugador a otro, el historial no dice a quién se le quita (spec 001, pendiente de `/sdd-change`).
 - El texto de ayuda de la banca dice siempre «Sin puerto, la banca cambia 4 cartas iguales por 1.», aunque se tengan puertos (visto en la spec 002; no es un requisito).
 - `.agents/skills/sdd` y `.claude/skills/sdd` son copias idénticas.

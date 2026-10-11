@@ -398,10 +398,13 @@
         const who = gains.map((g, i) => i).filter((i) => gains[i][r] > 0);
         const need = who.reduce((n, i) => n + gains[i][r], 0);
         if (need <= s.bank[r]) continue;
-        if (who.length === 1) gains[who[0]][r] = s.bank[r];
-        else {
+        const nombre = RES_INFO[r].name.toLowerCase(), n = s.bank[r];
+        if (who.length === 1) {
+          gains[who[0]][r] = n;
+          this.log(n === 0 ? 'No queda ' + nombre + ' en la banca' : n === 1 ? 'Solo quedaba 1 de ' + nombre + ' en la banca' : 'Solo quedaban ' + n + ' de ' + nombre + ' en la banca');
+        } else {
           who.forEach((i) => { gains[i][r] = 0; });
-          this.log('No queda ' + RES_INFO[r].name.toLowerCase() + ' suficiente en la banca: nadie lo recibe');
+          this.log('No queda ' + nombre + ' suficiente en la banca: nadie lo recibe');
         }
       }
       gains.forEach((g, i) => {

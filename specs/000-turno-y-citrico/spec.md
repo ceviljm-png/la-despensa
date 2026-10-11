@@ -1,6 +1,6 @@
 # Spec 000 — Turno, producción y Cítrico Gastronómico
 
-Estado: implementada
+Estado: implementada (cambio del 11 de octubre de 2026: RF-3 modificado y RF-12 nuevo).
 
 ## Contexto y objetivo
 Documenta, sin cambiarlo, cómo funciona hoy un turno de juego una vez terminada la colocación inicial:
@@ -26,7 +26,7 @@ y robar) y pasar el turno. Es el corazón de la partida y lo que más jugadas to
 ## Requisitos funcionales
 - RF-1: MIENTRAS el turno está en la fase de tirar, CUANDO el jugador del turno tira, EL SISTEMA saca dos dados de 1 a 6, guarda los dos valores y anota la suma en el historial.
 - RF-2: CUANDO la suma no es 7, EL SISTEMA entrega, por cada parcela con ese número que no sea la bloqueada, 1 carta de su recurso por cada huerta y 2 por cada bodega que haya en ella, a su dueño, y pasa a la fase de construir y comerciar.
-- RF-3: SI la banca no tiene bastantes cartas de un recurso para pagar a todos los que lo reciben, ENTONCES EL SISTEMA da a un único receptor las que queden, o, si hay varios receptores, no da ese recurso a nadie y lo anota en el historial.
+- RF-3: SI la banca no tiene bastantes cartas de un recurso para pagar a todos los que lo reciben, ENTONCES EL SISTEMA da a un único receptor las que queden y anota en el historial «Solo quedaban <n> de <recurso> en la banca» («Solo quedaba 1 …»; con 0, «No queda <recurso> en la banca»), o, si hay varios receptores, no da ese recurso a nadie y lo anota en el historial.
 - RF-4: CUANDO la suma es 7, EL SISTEMA no reparte recursos y exige a cada jugador con más de 7 cartas en la mano descartar la mitad, redondeando hacia abajo.
 - RF-5: MIENTRAS haya descartes pendientes, EL SISTEMA acepta de cada jugador pendiente, en cualquier orden, solo un descarte con exactamente las cartas exigidas y sin superar las que tiene de cada recurso, y devuelve esas cartas a la banca.
 - RF-6: CUANDO no quedan descartes pendientes tras un 7 (o no había ninguno), EL SISTEMA exige al jugador del turno mover el Cítrico a cualquier parcela distinta de la actual, incluido el Erial.
@@ -35,6 +35,7 @@ y robar) y pasar el turno. Es el corazón de la partida y lo que más jugadas to
 - RF-9: CUANDO hay un robo, EL SISTEMA muestra al ladrón y a la víctima, solo en la mano que se está viendo, un aviso con el recurso robado.
 - RF-10: MIENTRAS el turno está en la fase de construir y comerciar, CUANDO el jugador termina el turno, EL SISTEMA pasa el turno al siguiente jugador en orden de asiento, borra los dados y vuelve a permitir jugar una carta de cocina y que la máquina proponga un cambio.
 - RF-11: SI se intenta una acción de este flujo fuera de su fase o con datos no válidos, ENTONCES EL SISTEMA la rechaza sin cambiar nada.
+- RF-12: SI hay un robo y la víctima es una persona que juega en el mismo dispositivo pero no es quien lo tiene en ese momento, ENTONCES EL SISTEMA le muestra «<ladrón> te robó <recurso>» la próxima vez que reciba el dispositivo.
 
 ## Requisitos no funcionales
 - RNF-1: El total de cada recurso entre la banca y las manos es siempre 19, y ninguna mano ni la banca baja de 0.
@@ -47,7 +48,8 @@ y robar) y pasar el turno. Es el corazón de la partida y lo que más jugadas to
 - Un rival con construcción en la parcela pero con la mano vacía no cuenta como víctima.
 - Un rival con varias construcciones en la misma parcela cuenta como una sola víctima.
 - Una parcela con el número sacado pero bloqueada no produce nada, aunque tenga varias construcciones.
-- Si la banca tiene 0 cartas de un recurso y solo hay un receptor, recibe 0 y no se anota nada.
+- Si la banca tiene 0 cartas de un recurso y solo hay un receptor, recibe 0 y se anota «No queda <recurso> en la banca» (RF-3, cambiado el 11 de octubre de 2026).
+- Aviso de robo (RF-12): si a la víctima le roban dos veces antes de recibir el dispositivo, ve los dos avisos. En red no hace falta (cada persona tiene su dispositivo y lo ve al momento, RF-9). Si se cierra la app antes de que la víctima reciba el dispositivo, el aviso se pierde; el historial sigue diciendo quién robó a quién.
 - El recurso robado viaja en el estado a todos los dispositivos de la sala, igual que las manos: no es secreto ante las herramientas del navegador (confirmado como intencionado el 10 de octubre de 2026).
 
 ## Fuera de alcance
@@ -58,13 +60,12 @@ y robar) y pasar el turno. Es el corazón de la partida y lo que más jugadas to
 
 ## Criterios de finalización
 - Cada RF tiene un test de caracterización en `npm test` que fija el comportamiento actual, y `npm test` termina en `OK`.
-- RF-9 está comprobado a mano en el navegador.
+- RF-9 y RF-12 están comprobados a mano en el navegador; la regla de a quién avisar de RF-12 tiene test en `npm test`.
 
 ## Dudas abiertas
-Ninguna. Resueltas el 10 de octubre de 2026 (decisiones del propietario que el código actual **no** cumple; se harán
-con `/sdd-change 000` y entonces se añadirán los RF):
-- **Banca corta con un único receptor** — hoy recibe menos de lo que le toca sin aviso (`js/engine.js:401`).
-  Decisión: anotarlo en el historial, por ejemplo «Solo quedaban 2 de trigo en la banca».
-- **Aviso de robo con varias personas en un dispositivo** — hoy solo lo ve quien tiene el dispositivo en ese momento
-  (`js/ui.js:537-538`). Decisión: mostrar a la víctima «<ladrón> te robó <recurso>» cuando reciba el dispositivo.
+Ninguna. Resueltas el 10 de octubre de 2026 y hechas con `/sdd-change 000` el 11 de octubre de 2026:
+- **Banca corta con un único receptor** — recibía menos de lo que le tocaba sin aviso. Decisión: anotarlo en el
+  historial, por ejemplo «Solo quedaban 2 de trigo en la banca» → RF-3.
+- **Aviso de robo con varias personas en un dispositivo** — solo lo veía quien tenía el dispositivo en ese momento.
+  Decisión: mostrar a la víctima «<ladrón> te robó <recurso>» cuando reciba el dispositivo → RF-12.
 - El recurso robado visible en el estado: intencionado; está en «Casos límite».

@@ -105,14 +105,23 @@ describe('RF-3 · la banca se queda corta', () => {
     return { g, r, vs: h.vertsOfHex(H), nombre: RES_INFO[r].name.toLowerCase() };
   };
 
-  test('con un solo receptor, recibe lo que queda y no se anota nada sobre la banca', () => {
+  test('con un solo receptor, recibe lo que queda y el historial lo dice (cambio del 11 oct 2026)', () => {
     const { g, r, vs, nombre } = corta(18);
     h.put(g, vs[0], 0, 2);
     assert.ok(tirar(g, 4, 4));
     assert.equal(g.s.players[0].res[r], 1);
     assert.equal(g.s.bank[r], 0);
-    assert.equal(g.s.log.at(-1).text, 'J0 recibe 1 ' + nombre);
-    assert.ok(!g.s.log.some((l) => /banca/.test(l.text)));
+    assert.deepEqual(g.s.log.slice(-2).map((l) => l.text), ['Solo quedaba 1 de ' + nombre + ' en la banca', 'J0 recibe 1 ' + nombre]);
+    h.checkInvariants(g);
+  });
+
+  test('con un solo receptor y 2 en la banca, «Solo quedaban 2 de …»', () => {
+    const { g, r, vs, nombre } = corta(17);
+    h.put(g, vs[0], 0);
+    h.put(g, vs[3], 0, 2);
+    assert.ok(tirar(g, 4, 4));
+    assert.equal(g.s.players[0].res[r], 2);
+    assert.deepEqual(g.s.log.slice(-2).map((l) => l.text), ['Solo quedaban 2 de ' + nombre + ' en la banca', 'J0 recibe 2 ' + nombre]);
     h.checkInvariants(g);
   });
 
@@ -126,12 +135,12 @@ describe('RF-3 · la banca se queda corta', () => {
     h.checkInvariants(g);
   });
 
-  test('con la banca a 0 y un solo receptor, no recibe nada ni se anota nada', () => {
-    const { g, r, vs } = corta(19);
+  test('con la banca a 0 y un solo receptor, no recibe nada y se anota «No queda … en la banca»', () => {
+    const { g, r, vs, nombre } = corta(19);
     h.put(g, vs[0], 0);
     assert.ok(tirar(g, 4, 4));
     assert.equal(g.s.players[0].res[r], 0);
-    assert.equal(g.s.log.at(-1).text, 'J0 saca un 8');
+    assert.deepEqual(g.s.log.slice(-2).map((l) => l.text), ['J0 saca un 8', 'No queda ' + nombre + ' en la banca']);
     h.checkInvariants(g);
   });
 });
@@ -347,3 +356,31 @@ describe('RF-11 · acciones fuera de su fase', () => {
     });
   }
 });
+
+describe('RF-12 · aviso de robo al recibir el dispositivo', () => {
+  const { stealNotice } = require('../js/check.js');
+  const robo = (from, to, res = 'vino') => ({ from, to, res, turn: 5 });
+
+  test('si la víctima es una persona de este dispositivo que no lo tiene, el aviso se guarda', () => {
+    const r = stealNotice({}, robo(1, 2), 0, [0, 1]);
+    assert.deepEqual(r.avisos, { 1: [robo(1, 2)] });
+    assert.deepEqual(r.mostrar, []);
+  });
+  test('si la víctima tiene el dispositivo o es una máquina, no se guarda nada', () => {
+    assert.deepEqual(stealNotice({}, robo(0, 2), 0, [0, 1]), { avisos: {}, mostrar: [] });
+    assert.deepEqual(stealNotice({}, robo(2, 0), 0, [0, 1]), { avisos: {}, mostrar: [] });
+  });
+  test('cuando la víctima recibe el dispositivo, ve todos sus robos y se vacían', () => {
+    let r = stealNotice({}, robo(1, 2, 'sal'), 0, [0, 1]);
+    r = stealNotice(r.avisos, robo(1, 0, 'trigo'), 0, [0, 1]);
+    assert.deepEqual(r.mostrar, []);
+    r = stealNotice(r.avisos, null, 1, [0, 1]);
+    assert.deepEqual(r.mostrar, [robo(1, 2, 'sal'), robo(1, 0, 'trigo')]);
+    assert.deepEqual(r.avisos, {});
+  });
+  test('sin nadie viendo (pasando el dispositivo), no se muestra nada', () => {
+    const r = stealNotice({ 1: [robo(1, 2)] }, null, -1, [0, 1]);
+    assert.deepEqual(r, { avisos: { 1: [robo(1, 2)] }, mostrar: [] });
+  });
+});
+

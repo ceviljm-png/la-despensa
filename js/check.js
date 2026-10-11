@@ -1,7 +1,7 @@
 /* La Despensa — comprobaciones sin DOM que usa la interfaz (también se ejecutan en Node para las pruebas).
    Lo que llega de otro dispositivo: el anfitrión comprueba las órdenes de los invitados y el invitado, el estado que le
    manda el anfitrión. Las reglas del inicio (quién juega y si hay una partida guardada que se perdería), de la sala de
-   espera (nombres y relevo del anfitrión) y el aviso de las ofertas rechazadas */
+   espera (nombres y relevo del anfitrión), el aviso de las ofertas rechazadas y los avisos de robo pendientes */
 (function (root) {
   'use strict';
   const E = typeof module !== 'undefined' && module.exports ? require('./engine.js') : root.Despensa;
@@ -147,7 +147,20 @@
     return { motivos, n, titulo: n === 1 ? 'Nadie acepta.' : `Nadie acepta otra vez (${n}.º intento).` };
   }
 
-  const api = { int, resMap, order, state, hasPerson, savedGame, nameTaken, takeover, refusal };
+  /* ---------- robos ---------- */
+  /* Avisos de robo con varias personas en un dispositivo (spec 000, RF-12). avisos = { víctima: [robos sin ver] };
+     robo = el robo nuevo o null; viendo = quien tiene el dispositivo (-1 mientras se pasa); personas = las de este
+     dispositivo. Guarda el robo si la víctima es una de ellas y no lo está viendo, y devuelve los de quien lo tiene */
+  function stealNotice(avisos, robo, viendo, personas) {
+    const out = {};
+    for (const k of Object.keys(avisos || {})) out[k] = avisos[k].slice();
+    if (robo && robo.from !== viendo && personas.includes(robo.from)) (out[robo.from] = out[robo.from] || []).push(robo);
+    const mostrar = viendo >= 0 && out[viendo] ? out[viendo] : [];
+    delete out[viendo];
+    return { avisos: out, mostrar };
+  }
+
+  const api = { int, resMap, order, state, hasPerson, savedGame, nameTaken, takeover, refusal, stealNotice };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DespensaCheck = api;
 })(typeof self !== 'undefined' ? self : this);
