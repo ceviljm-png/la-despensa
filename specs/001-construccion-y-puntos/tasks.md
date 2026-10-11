@@ -62,3 +62,18 @@ sin caminos y 1 aceite, 1 sal, 1 pescado y 1 trigo), cargada en el navegador int
   los 3 lados de la huerta (los mismos que da el motor para ese cruce: 0, 1 y 10), ningún cruce. **Correcto.**
 - **Cancelar:** vuelve «Construye, comercia o termina tu turno», desaparecen las marcas y la mano no cambia. **Correcto.**
 - Sin desplazamiento horizontal a 375 px. Consola: solo los errores ya conocidos del service worker del navegador integrado.
+
+## Cambio del 11 de octubre de 2026 — RF-11
+
+- [x] **T9. Historial al quitar la Gran Ruta.** RF-11
+  - Tests en `test/construccion.test.js` (en rojo) y el texto en `updateLongest`; el historial en el navegador.
+  - Hecho cuando: los tests pasan, `npm test` termina en `OK` y `MEMORY.md` está al día.
+
+### Resultado (11 de octubre de 2026)
+
+- `npm test`: el test de «si le supera, pasa al otro» y el nuevo de «al cortarla, otro la consigue» fallan sin el
+  cambio (2 en rojo) y pasan con él; `npm test` termina en `OK`.
+- Navegador (375 px): partida preparada en Node con el motor en la que Bea supera a Ana; el historial muestra
+  «Bea consigue la Gran Ruta (6 caminos) y se la quita a Ana: 2 puntos», partido en dos líneas y sin desplazamiento
+  horizontal; la etiqueta «Ruta» está en la ficha de Bea. Consola: solo los errores ya conocidos del service worker.
+

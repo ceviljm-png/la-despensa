@@ -1,6 +1,6 @@
 # Spec 001 — Construcción, puntos y victoria
 
-Estado: implementada
+Estado: implementada (cambio del 11 de octubre de 2026: RF-11 nuevo).
 
 ## Contexto y objetivo
 Documenta, sin cambiarlo, cómo se construyen caminos, huertas y bodegas durante la partida, cómo se cuentan
@@ -35,6 +35,7 @@ los puntos (incluidas la Gran Ruta y la Gran Brigada) y cuándo termina la parti
 - RF-8: CUANDO un jugador juega un Chef, EL SISTEMA le da la Gran Brigada si ha jugado al menos 3 chefs y más que quien la tiene ahora, y lo anota en el historial; nadie la pierde de otra forma.
 - RF-9: CUANDO el jugador del turno construye, compra una carta de cocina o juega un Chef, y CUANDO empieza el turno de un jugador, EL SISTEMA declara ganador a ese jugador si sus puntos, contando las Estrellas, llegan a los de la partida (8 en Sencilla, 10 en Clásica y Completa), termina la partida y lo anota en el historial; después ya no acepta ninguna jugada.
 - RF-10: MIENTRAS una persona elige qué construir en su turno, EL SISTEMA solo habilita las construcciones que puede pagar y tienen sitio (explicando el motivo en las demás), marca en el tablero únicamente los lados o cruces válidos y permite cancelar la elección pulsando de nuevo el mismo botón.
+- RF-11: CUANDO la Gran Ruta pasa de un jugador a otro, EL SISTEMA anota en el historial «<nuevo> consigue la Gran Ruta (<n> caminos) y se la quita a <anterior>: 2 puntos»; si estaba libre, sigue anotando «<nuevo> consigue la Gran Ruta (<n> caminos): 2 puntos».
 
 ## Requisitos no funcionales
 - RNF-1: Las piezas colocadas más las que quedan suman siempre 15 caminos, 5 huertas y 4 bodegas por jugador.
@@ -55,12 +56,12 @@ los puntos (incluidas la Gran Ruta y la Gran Brigada) y cuándo termina la parti
 - Pantalla de fin de partida y «Nueva partida» (spec de la partida en un dispositivo).
 
 ## Criterios de finalización
-- Cada RF del motor (RF-1 a RF-9) tiene un test de caracterización en `npm test` que fija el comportamiento actual, y `npm test` termina en `OK`.
+- Cada RF del motor (RF-1 a RF-9 y RF-11) tiene un test de caracterización en `npm test` que fija el comportamiento actual, y `npm test` termina en `OK`.
 - RF-10 está comprobado a mano en el navegador, a 375 px y en escritorio.
 
 ## Dudas abiertas
 Ninguna. Resueltas el 10 de octubre de 2026:
 - Ganar al empezar el turno propio: intencionado; está en «Casos límite».
-- **Historial al pasar la Gran Ruta de un jugador a otro** — hoy solo dice quién la consigue (`js/engine.js:296-302`).
-  Decisión del propietario, que el código actual no cumple: que diga «<nombre> consigue la Gran Ruta y se la quita a
-  <nombre>». Se hará con `/sdd-change 001` y entonces se añadirá el RF.
+- **Historial al pasar la Gran Ruta de un jugador a otro** — solo decía quién la consigue. Decisión del propietario:
+  que diga «<nombre> consigue la Gran Ruta y se la quita a <nombre>». Hecho con `/sdd-change 001` (11 de octubre de
+  2026): RF-11.

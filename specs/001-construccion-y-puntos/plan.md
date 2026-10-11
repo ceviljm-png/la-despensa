@@ -81,3 +81,26 @@ Al final de cada test que juega se llama a `checkInvariants` (RNF-1 y RNF-2).
 - El test «pasa a J1 y el historial solo dice que J1 la consigue» fija el comportamiento que el propietario ha decidido
   cambiar (spec 001, pendiente de `/sdd-change`): cuando se haga el cambio, este test se actualizará junto con el código.
 - Cobertura: RF-1 a RF-9 automáticos; RNF-1 y RNF-2 con `checkInvariants`; RNF-3 porque todo corre en Node; RF-10 a mano.
+
+---
+
+# Cambio del 11 de octubre de 2026 — RF-11
+
+| Archivo | Acción | Responsabilidad | RF |
+|---|---|---|---|
+| `js/engine.js` | modificar `updateLongest` | Si la Gran Ruta tenía dueño y pasa a otro, el texto añade «y se la quita a <anterior>» | RF-11 |
+| `test/construccion.test.js` | modificar | El test «si le supera, pasa al otro» espera el texto nuevo; otro para cuando a quien la tiene le cortan la ruta y otro la consigue | RF-11 |
+
+```
+updateLongest, cuando la consigue tops[0]:
+  texto = nombre + ' consigue la Gran Ruta (' + max + ' caminos)'
+  si cur !== null (y es otro): texto += ' y se la quita a ' + nombre(cur)
+  texto += ': 2 puntos'
+```
+
+Decisión: se mantiene en una sola entrada del historial (alternativa descartada: dos entradas «consigue» y «pierde»),
+porque el propietario pidió la frase junta y así se lee como un único suceso.
+
+Tests (`npm test`): J1 supera a J0 → «J1 consigue la Gran Ruta (6 caminos) y se la quita a J0: 2 puntos» y no se anota
+«pierde»; desde libre, el texto de siempre. Sin cambios visuales: el historial pinta el texto del motor.
+

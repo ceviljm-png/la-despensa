@@ -295,7 +295,8 @@
       const tops = lens.map((l, i) => i).filter((i) => lens[i] === max);
       if (max >= 5 && tops.length === 1) {
         s.longest = { p: tops[0], len: max };
-        this.log(s.players[tops[0]].name + ' consigue la Gran Ruta (' + max + ' caminos): 2 puntos', tops[0]);
+        const quita = cur !== null && cur !== tops[0] ? ' y se la quita a ' + s.players[cur].name : '';
+        this.log(s.players[tops[0]].name + ' consigue la Gran Ruta (' + max + ' caminos)' + quita + ': 2 puntos', tops[0]);
       } else if (cur !== null) {
         s.longest = { p: null, len: 0 };
         this.log(s.players[cur].name + ' pierde la Gran Ruta', cur);

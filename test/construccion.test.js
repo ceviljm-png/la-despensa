@@ -322,15 +322,15 @@ describe('RF-7 · Gran Ruta', () => {
     assert.ok(!textos(g).some((t) => /Gran Ruta/.test(t)));
   });
 
-  test('quien la tiene la conserva si otro le iguala; si le supera, pasa al otro y solo se anota quién la consigue', () => {
+  test('quien la tiene la conserva si otro le iguala; si le supera, pasa al otro y se anota a quién se la quita (RF-11)', () => {
     const { g, lineas } = conLineas(2, [4, 4]);
     construir(g, 0, lineas[0], 4);
     construir(g, 1, lineas[1], 4);
     assert.deepEqual(g.s.longest, { p: 0, len: 5 }, 'empate: la conserva J0');
     construir(g, 1, lineas[1], 5);
     assert.deepEqual(g.s.longest, { p: 1, len: 6 });
-    assert.equal(g.s.log.at(-1).text, 'J1 consigue la Gran Ruta (6 caminos): 2 puntos');
-    assert.ok(!textos(g).some((t) => /pierde/.test(t)), 'no se anota que J0 la pierde');
+    assert.equal(g.s.log.at(-1).text, 'J1 consigue la Gran Ruta (6 caminos) y se la quita a J0: 2 puntos');
+    assert.ok(!textos(g).some((t) => /pierde/.test(t)), 'no se anota aparte que J0 la pierde');
     h.checkInvariants(g);
   });
 
@@ -353,6 +353,17 @@ describe('RF-7 · Gran Ruta', () => {
     assert.deepEqual([g.roadLength(1), g.roadLength(2)], [5, 5]);
     assert.deepEqual(g.s.longest, { p: null, len: 0 });
     assert.equal(g.s.log.at(-1).text, 'J0 pierde la Gran Ruta');
+    h.checkInvariants(g);
+  });
+
+  test('si al cortarla otro tiene en solitario la más larga, la consigue y se anota a quién se la quita (RF-11)', () => {
+    const { g, lineas } = conLineas(3, [4, 0, 0]);
+    construir(g, 0, lineas[0], 4);
+    for (let i = 0; i < 5; i++) h.road(g, h.edgeBetween(lineas[1][i], lineas[1][i + 1]), 1);
+    assert.equal(g.s.longest.p, 0, 'J0 la conserva mientras nadie le supera');
+    cortar(g, 2, lineas[0]);
+    assert.deepEqual(g.s.longest, { p: 1, len: 5 });
+    assert.equal(g.s.log.at(-1).text, 'J1 consigue la Gran Ruta (5 caminos) y se la quita a J0: 2 puntos');
     h.checkInvariants(g);
   });
 });
