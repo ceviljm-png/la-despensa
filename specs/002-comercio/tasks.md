@@ -55,3 +55,28 @@ en el navegador integrado:
    Ana. **Correcto.**
 
 Consola: solo los errores ya conocidos del service worker del navegador integrado.
+
+## Cambio del 11 de octubre de 2026 — RF-11
+
+- [x] **T5. Regla `refusal`.** RF-11
+  - Tests en `test/comercio.test.js` (en rojo) y la función en `js/check.js`.
+  - Hecho cuando: los tests pasan y `npm test` termina en `OK`.
+- [x] **T6. Aviso en la ventana de comercio.** RF-11
+  - La ventana guarda el último rechazo y usa `refusal`.
+  - Hecho cuando: `npm test` termina en `OK` y `ui.js` no tiene errores de sintaxis.
+- [x] **T7. Comprobación en el navegador y cierre.** RF-11
+  - Repetir la misma oferta rechazada y cambiarla, a 375 px y en escritorio; anotar aquí el resultado; `MEMORY.md` al día.
+  - Hecho cuando: el resultado está anotado aquí y `npm test` termina en `OK`.
+
+### Resultado de la comprobación a mano (11 de octubre de 2026)
+
+Completa, Difícil; Ana con 2 aceite y 2 vino, Rosa con 1 sal, Paco con 3 sal y 3 aceite; «Comerciar → Con rivales»:
+
+| Comprobación | Resultado |
+|---|---|
+| 1 aceite por 1 sal, tres veces seguidas (375 px): «Nadie acepta.», «Nadie acepta otra vez (2.º intento).», «… (3.º intento).», con los motivos de Rosa y Paco detrás | Correcto |
+| Se cambia a 2 aceite por 1 sal: vuelve a «Nadie acepta.»; repetida, 2.º y 3.º intento | Correcto |
+| Se cierra y se vuelve a abrir el comercio (escritorio): la misma oferta vuelve a empezar en «Nadie acepta.» y después «2.º intento» | Correcto |
+
+Consola: solo los errores ya conocidos del service worker del navegador integrado.
+

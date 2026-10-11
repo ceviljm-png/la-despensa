@@ -153,3 +153,24 @@ describe('RF-3 · cambio entre jugadores', () => {
     assert.ok(tres().playerTrade(0, 2, { aceite: 1 }, { vino: 1 }));
   });
 });
+
+describe('RF-11 · el aviso de rechazo cambia si se repite', () => {
+  const { refusal } = require('../js/check.js');
+  const motivos = 'Por 1 aceite a cambio de 1 sal: Rosa no quiere quedarse sin sal.';
+
+  test('el primer rechazo dice «Nadie acepta.»', () => {
+    assert.deepEqual(refusal(motivos, null), { motivos, n: 1, titulo: 'Nadie acepta.' });
+  });
+  test('el mismo rechazo seguido lleva la cuenta de intentos', () => {
+    const r2 = refusal(motivos, refusal(motivos, null));
+    assert.equal(r2.n, 2);
+    assert.equal(r2.titulo, 'Nadie acepta otra vez (2.º intento).');
+    assert.equal(refusal(motivos, r2).titulo, 'Nadie acepta otra vez (3.º intento).');
+  });
+  test('si cambia la oferta o un motivo, la cuenta vuelve a empezar', () => {
+    const r2 = refusal(motivos, refusal(motivos, null));
+    const otro = refusal('Por 2 aceite a cambio de 1 sal: Rosa no quiere quedarse sin sal.', r2);
+    assert.equal(otro.n, 1);
+    assert.equal(otro.titulo, 'Nadie acepta.');
+  });
+});

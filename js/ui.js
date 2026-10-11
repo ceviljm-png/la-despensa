@@ -794,7 +794,7 @@
   function openTrade() {
     const p = g.s.current;
     const withPlayers = MODES[g.s.mode].playerTrade;
-    let tab = 'bank', give = null, get = null, note = '', sending = false;
+    let tab = 'bank', give = null, get = null, note = '', sending = false, rechazo = null;   // rechazo: el último «Nadie acepta» (RF-11)
     const off = { g: emptyRes(), w: emptyRes() };
     const m = openModal('');
     const draw = () => {
@@ -850,7 +850,8 @@
         sending = false;
         if (!document.body.contains(m.el)) return;
         if (!refused) { m.close(); render(); return; }
-        note = '<b class="refused">Nadie acepta.</b> ' + clean(refused);
+        rechazo = Check.refusal(refused, rechazo);
+        note = `<b class="refused">${rechazo.titulo}</b> ` + clean(refused);
         draw();
         const el = m.el.querySelector('.refused');
         if (el) el.parentNode.scrollIntoView({ block: 'nearest' });

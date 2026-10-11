@@ -1,6 +1,7 @@
 /* La Despensa — comprobaciones sin DOM que usa la interfaz (también se ejecutan en Node para las pruebas).
    Lo que llega de otro dispositivo: el anfitrión comprueba las órdenes de los invitados y el invitado, el estado que le
-   manda el anfitrión. Y las reglas del inicio: quién juega y si hay una partida guardada que se perdería */
+   manda el anfitrión. Las reglas del inicio (quién juega y si hay una partida guardada que se perdería), de la sala de
+   espera (nombres y relevo del anfitrión) y el aviso de las ofertas rechazadas */
 (function (root) {
   'use strict';
   const E = typeof module !== 'undefined' && module.exports ? require('./engine.js') : root.Despensa;
@@ -138,7 +139,15 @@
     return { delay: k * 15000, players: [personas[k], ...resto].map(copia) };
   }
 
-  const api = { int, resMap, order, state, hasPerson, savedGame, nameTaken, takeover };
+  /* ---------- comercio ---------- */
+  /* Aviso de una oferta que nadie acepta (spec 002, RF-11). motivos = el texto de la oferta y los motivos de cada rival;
+     si es idéntico al rechazo anterior, el principio lleva la cuenta de intentos para que el aviso nunca se quede igual */
+  function refusal(motivos, anterior) {
+    const n = anterior && anterior.motivos === motivos ? anterior.n + 1 : 1;
+    return { motivos, n, titulo: n === 1 ? 'Nadie acepta.' : `Nadie acepta otra vez (${n}.º intento).` };
+  }
+
+  const api = { int, resMap, order, state, hasPerson, savedGame, nameTaken, takeover, refusal };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DespensaCheck = api;
 })(typeof self !== 'undefined' ? self : this);

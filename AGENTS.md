@@ -145,7 +145,8 @@ y los agentes `coordinator`, `planner`, `implementer` y `reviewer` en `.claude/`
 - **Estado guardado**: si cambia la forma de `g.s`, mantener la compatibilidad con partidas guardadas
   (valor por defecto para lo nuevo) o subir `version` y descartar las antiguas en `showMenu()`.
 - **Cada rechazo de una oferta debe producir un texto distinto** que nombre la oferta y el motivo de cada rival,
-  para que nunca parezca que el juego no ha hecho nada.
+  para que nunca parezca que el juego no ha hecho nada; si se repite la misma, el aviso lleva la cuenta de intentos
+  (`DespensaCheck.refusal`).
 - **Móvil primero**: comprobar cualquier cambio visual a 375 px de ancho y en escritorio.
 
 ## Antes de dar algo por terminado

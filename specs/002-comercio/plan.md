@@ -79,3 +79,43 @@ Todo a 375 px y en escritorio, sin errores nuevos en la consola.
 - Igual que en las specs anteriores: en cada tarea se cambia a propósito el valor esperado, se ve fallar el test y se
   restaura; cada rechazo lleva su control. Nunca se toca `js/` para provocarlo.
 - Cobertura: RF-1 a RF-3 automáticos; RNF-1 con `checkInvariants`; RF-4 a RF-10 y RNF-2 a mano.
+
+---
+
+# Cambio del 11 de octubre de 2026 — RF-11
+
+## Archivos
+
+| Archivo | Acción | Responsabilidad | RF |
+|---|---|---|---|
+| `js/check.js` | ampliar | Función pura `refusal(motivos, anterior)`: el principio del aviso y la cuenta de rechazos idénticos | RF-11 |
+| `js/ui.js` | modificar | La ventana de comercio guarda el último rechazo y usa `refusal` para el aviso | RF-11 |
+| `test/comercio.test.js` | ampliar | Tests de `refusal` | RF-11 |
+
+## Función pura (`js/check.js`)
+
+```
+refusal(motivos, anterior) → { motivos, n, titulo }                                                  (RF-11)
+  n = anterior y anterior.motivos === motivos ? anterior.n + 1 : 1
+  titulo = n === 1 ? 'Nadie acepta.' : 'Nadie acepta otra vez (' + n + '.º intento).'
+```
+`motivos` es el texto que ya devuelve `resolveProposal` («Por … a cambio de …: Rosa …; Paco ….»), así que la oferta y
+los motivos entran en la comparación.
+
+## Cambios en `js/ui.js`
+- En la ventana de comercio, `ultimo = null` al abrirla. Al recibir un rechazo: `ultimo = Check.refusal(motivos, ultimo)`
+  y `note = '<b class="refused">' + ultimo.titulo + '</b> ' + clean(motivos)`. Con trato, `ultimo = null`.
+
+## Decisiones
+
+| Decisión | Alternativa descartada | Por qué |
+|---|---|---|
+| Contar los intentos idénticos en el encabezado | Variar el texto con frases al azar | Una cuenta es verificable y deja claro que el juego ha vuelto a preguntar |
+| La cuenta vive en la ventana | Guardarla en el estado de la partida | Es solo un aviso; no tiene que guardarse ni viajar por la red |
+
+## Estrategia de tests
+- `npm test`: `refusal` sin anterior → n 1 y «Nadie acepta.»; el mismo texto → 2 y 3 con «otra vez (2.º intento)»;
+  otro texto → vuelve a 1.
+- A mano: Difícil, repetir la misma oferta rechazada tres veces y ver el encabezado 1, 2.º y 3.º; cambiar la oferta y
+  ver que vuelve a «Nadie acepta.». A 375 px y en escritorio.
+

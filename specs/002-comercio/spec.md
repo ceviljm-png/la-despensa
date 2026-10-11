@@ -1,6 +1,6 @@
 # Spec 002 — Comercio con la banca, puertos y entre jugadores
 
-Estado: implementada
+Estado: implementada (cambio del 11 de octubre de 2026: RF-11 nuevo).
 
 ## Contexto y objetivo
 Documenta, sin cambiarlo, cómo se cambian cartas de recurso: con la banca (4:1 o mejor con puertos) y, en la
@@ -35,6 +35,7 @@ que más quejas ha dado («parece que no hace nada»), por eso cada rechazo tien
 - RF-8: CUANDO al menos un rival acepta, EL SISTEMA deja a quien propone elegir con quién cambiar entre los que aceptan, o cancelar; si elige, hace el cambio, y en los dos casos cierra el comercio.
 - RF-9: CUANDO la máquina propone un cambio, EL SISTEMA se lo ofrece primero a las personas y después a las máquinas, en orden de asiento dentro de cada grupo, saltándose a quien no tiene las cartas pedidas; el primero que acepta cierra el cambio y, si nadie acepta, no hay cambio.
 - RF-10: CUANDO se pregunta a una persona por una oferta, EL SISTEMA le muestra quién la propone, lo que le dan y lo que le piden, con los botones «Rechazar» y «Aceptar».
+- RF-11: SI ningún rival acepta y el rechazo (la oferta y los motivos) es idéntico al anterior en la misma ventana de comercio, ENTONCES EL SISTEMA cambia el principio del texto de RF-7 por «Nadie acepta otra vez (<n>.º intento).», donde <n> cuenta los rechazos idénticos seguidos (2, 3…), para que el aviso nunca se quede igual.
 
 ## Requisitos no funcionales
 - RNF-1: Un cambio nunca crea ni destruye cartas: el total de cada recurso entre la banca y las manos sigue siendo 19.
@@ -49,6 +50,7 @@ que más quejas ha dado («parece que no hace nada»), por eso cada rechazo tien
 - Cancelar la elección no hace ningún cambio y no muestra texto de rechazo.
 - Con varias personas en un mismo dispositivo, la pregunta a otra persona aparece en la pantalla tal como está, sin pasar el dispositivo (confirmado como intencionado el 10 de octubre de 2026).
 - Cuando nadie acepta un cambio propuesto por la máquina, no se anota nada en el historial (confirmado como intencionado).
+- Rechazo repetido (RF-11): si cambia la oferta o el motivo de algún rival, la cuenta vuelve a empezar y el texto es el de RF-7. Al cerrar y volver a abrir el comercio, también. En red, el invitado ve lo mismo.
 
 ## Fuera de alcance
 - Cuándo y qué propone la máquina, y cómo valora cada nivel las ofertas (spec 003).
@@ -57,13 +59,13 @@ que más quejas ha dado («parece que no hace nada»), por eso cada rechazo tien
 
 ## Criterios de finalización
 - RF-1 a RF-3 tienen tests de caracterización en `npm test`, y `npm test` termina en `OK`.
+- RF-11 tiene test en `npm test` (cómo cambia el texto) y se comprueba en el navegador repitiendo la misma oferta.
 - RF-4 a RF-10 y RNF-2 están comprobados a mano en el navegador, a 375 px y en escritorio.
   (Corregido el 10 de octubre de 2026: RF-9 y los textos de RNF-2 están en la interfaz, no en el motor, y no se pueden
   probar en Node sin cambiar código; ver `plan.md`.)
 
 ## Dudas abiertas
 Ninguna. Resueltas el 10 de octubre de 2026:
-- **Rechazo repetido** — hoy, si se repite exactamente la misma oferta, el texto de rechazo es idéntico al anterior
-  (`js/ui.js:847`, `js/ui.js:896`). Decisión del propietario: **tiene que cambiar**. Como el código actual no lo cumple,
-  no es un requisito de esta spec (que describe lo que hay): se hará con `/sdd-change 002` y entonces se añadirá el RF.
+- **Rechazo repetido** — el texto de rechazo era idéntico al repetir la misma oferta. Decisión del propietario: **tiene
+  que cambiar**. Hecho con `/sdd-change 002` (11 de octubre de 2026): RF-11.
 - Pasar el dispositivo en las ofertas y el rastro de las ofertas de la máquina: intencionados; están en «Casos límite».
