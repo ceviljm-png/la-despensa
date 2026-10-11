@@ -87,3 +87,87 @@ queda pendiente para probar con móviles, como ya está anotado en «Estado actu
   restaura. Nunca se toca `js/` para provocarlo.
 - Cobertura: RF-1, RF-2, RF-8, RF-9 y RF-10 en su parte de `net.js`, automáticos; RF-3 a RF-7, RF-9 y RF-10 en su parte
   de interfaz y RNF-1 a RNF-4, a mano.
+
+---
+
+# Cambio del 10 de octubre de 2026 — RF-11, RF-12 y RF-13
+
+## Archivos
+
+| Archivo | Acción | Responsabilidad | RF |
+|---|---|---|---|
+| `js/check.js` | ampliar | Dos funciones puras: `nameTaken(jugadores, nombre, dispositivo)` y `takeover(jugadores, miDispositivo)` | RF-11 a RF-13 |
+| `js/ui.js` | modificar | El invitado recuerda la última lista de la sala de espera; al perder al anfitrión programa el relevo; quien lo toma abre la sala con el mismo código y pasa a ser anfitrión; el anfitrión rechaza nombres repetidos | RF-11 a RF-13 |
+| `test/red-salas.test.js` | ampliar | Tests de `nameTaken` y `takeover` | RF-11 a RF-13 |
+| `js/net.js` | **sin cambios** | `Room.open(código)` ya reintenta cada 3 s mientras el código siga ocupado (RF-10), que es lo que necesita el relevo | — |
+
+## Funciones puras (`js/check.js`)
+
+```
+nameTaken(jugadores, nombre, dispositivo) → el jugador que ya lleva ese nombre, o null                (RF-13)
+  igual(a, b) = a.trim().toLowerCase() === b.trim().toLowerCase()      (los acentos sí distinguen)
+  devuelve el primer jugador con igual(nombre) cuyo dispositivo no sea `dispositivo` (máquinas incluidas)
+
+takeover(jugadores, miDispositivo) → null si no me toca; si me toca, { delay, players }               (RF-11, RF-12)
+  jugadores = la lista de la sala de espera tal como llega a los invitados; el 0 es el anfitrión
+  personas = jugadores sin el 0 y sin máquinas, en orden de llegada
+  k = mi posición en personas; si no estoy → null
+  delay = k × 15000 ms   (el primero, al momento; cada siguiente, 15 s después del anterior)
+  players = [yo, …el resto sin el anfitrión ni las personas anteriores a mí (que no tomaron el relevo)],
+            cada uno como { name, dev, ai }; las máquinas se conservan en su orden
+```
+
+## Cambios en `js/ui.js`
+
+```
+invitado, mensaje 'lobby'      → guardar la lista (guestLobby) además de pintarla
+invitado, estado 'reconnecting' y sin partida empezada → programarRelevo()
+invitado, estado 'online'      → cancelarRelevo()          (ha vuelto a conectar con un anfitrión)
+leaveNet                       → cancelarRelevo(); guestLobby = null
+
+programarRelevo()                                                                                   (RF-11, RF-12)
+  r = Check.takeover(guestLobby.players, myDev); si es null o ya hay un relevo en marcha → nada
+  relevo = { r, temporizador: setTimeout(intentarRelevo, r.delay) }
+
+intentarRelevo()
+  sala = new Net.Room(…); relevo.sala = sala
+  intentar sala.open(mismo código)         // reintenta cada 3 s mientras el antiguo anfitrión siga ocupándolo
+  si falla o se ha cancelado entretanto → cerrar esa sala y seguir como invitado (sus reintentos siguen)
+  si se abre: cerrar la conexión de invitado; net = { anfitrión, sala, código }
+              lobby = { players: r.players, mode y level de guestLobby }; olvidar la sala recordada de invitado
+              lobbyChanged()                // la pinta («Tú») y la manda a los que vuelvan a entrar
+
+anfitrión, saludo en la sala de espera                                                              (RF-13)
+  otro = Check.nameTaken(lobby.players, nombre, dispositivo)
+  si otro → quitar de la lista al que entra si ya estaba y echarlo con
+            «Ya hay alguien llamado <otro.name> en la sala. Elige otro nombre.»
+```
+
+Mientras se intenta abrir la sala nueva, la conexión de invitado sigue reintentando: si el anfitrión de antes vuelve
+(solo había perdido la conexión un momento), el invitado reconecta, se cancela el relevo y no pasa nada más.
+
+### Cómo se pinta
+- El nuevo anfitrión ve la sala de espera de anfitrión (código, «Tú», añadir máquina, empezar); quien aún no ha vuelto
+  aparece como «Desconectado» hasta que entra (y se le puede quitar con ✕).
+- Durante el relevo, los invitados ven el aviso que ya existe («Se ha perdido la conexión…»).
+- El nombre repetido llega al invitado como cualquier otro rechazo: vuelve al inicio con el aviso.
+
+## Decisiones
+
+| Decisión | Alternativa descartada | Por qué |
+|---|---|---|
+| Esperas escalonadas de 15 s por orden de llegada | Que todos lo intenten a la vez | Ganaría uno al azar, no el que más tiempo lleva (RF-11) |
+| Cada invitado decide con la última lista recibida | Que el anfitrión deje elegido un sucesor | Si el anfitrión desaparece de golpe no puede avisar de nada; la lista ya la tienen todos |
+| Mantener la conexión de invitado mientras se intenta el relevo | Cerrarla antes | Si el anfitrión solo había tenido un corte, el invitado vuelve a él y no hay relevo indebido |
+| `takeover` y `nameTaken` en `check.js` | Dentro de `ui.js` | Para probarlas en Node (principio 4) |
+
+## Estrategia de tests
+- `npm test` (de `AGENTS.md`), tests primero y en rojo:
+  - `nameTaken`: mismo nombre con otras mayúsculas o espacios → choca; con un acento distinto → no; el mismo dispositivo
+    → no choca consigo mismo; una máquina con ese nombre → choca; lista vacía → null.
+  - `takeover`: el invitado más antiguo → espera 0 y lista con él primero, sin el anfitrión y con las máquinas; el
+    segundo → 15 s y sin el primero; una máquina, un dispositivo que no está o el anfitrión → null.
+- A mano en el navegador con el PeerJS de mentira: el invitado más antiguo pierde al anfitrión y pasa a llevar la sala
+  con la misma lista y las máquinas; otro invitado de mentira vuelve a entrar y aparece conectado; un invitado que no es
+  el primero espera y toma el relevo a los 15 s si nadie lo ha hecho; un saludo con «ana» cuando ya está «Ana» recibe el
+  rechazo, y en el invitado ese rechazo le devuelve al inicio con el aviso. Sin errores en la consola.

@@ -38,6 +38,8 @@
   /* Red: net = { role: 'host' | 'guest', room, code } */
   let net = null;
   let lobby = null;      // anfitrión antes de empezar: { players: [{ name, dev, ai }], mode, level }
+  let guestLobby = null; // invitado: la última lista de la sala de espera, para el relevo del anfitrión
+  let relevo = null;     // invitado: relevo del anfitrión en marcha
   let online = {};
   let lastSent = '';
   let prompting = { discard: false, steal: false };
@@ -1046,6 +1048,8 @@
   }
 
   function leaveNet() {
+    cancelarRelevo();
+    guestLobby = null;
     if (net) net.room.close();
     net = null;
     lobby = null;
@@ -1103,6 +1107,14 @@
       return;
     }
     if (!lobby) return;
+    const otro = Check.nameTaken(lobby.players, name, dev);
+    if (otro) {
+      const antes = lobby.players.length;
+      lobby.players = lobby.players.filter((p) => p.dev !== dev);
+      net.room.kick(dev, { t: 'kick', why: `Ya hay alguien llamado ${otro.name} en la sala. Elige otro nombre.` });
+      if (lobby.players.length !== antes) lobbyChanged();
+      return;
+    }
     const known = lobby.players.find((p) => p.dev === dev);
     if (known) known.name = name;
     else if (lobby.players.length >= 4) { net.room.kick(dev, { t: 'kick', why: 'La sala está llena.' }); return; }
@@ -1204,13 +1216,56 @@
   function guestStatus(st) {
     if (!isGuest()) return;
     const bar = $('#netbar');
-    if (st === 'reconnecting') { bar.hidden = false; bar.textContent = 'Se ha perdido la conexión con la sala. Reintentando…'; }
-    else if (st === 'online') bar.hidden = true;
+    if (st === 'reconnecting') {
+      bar.hidden = false; bar.textContent = 'Se ha perdido la conexión con la sala. Reintentando…';
+      if (!g) programarRelevo();
+    } else if (st === 'online') { bar.hidden = true; cancelarRelevo(); }
+  }
+
+  /* Relevo del anfitrión en la sala de espera (spec 005, RF-11 y RF-12): con la última lista recibida, el invitado más
+     antiguo intenta abrir la sala con el mismo código al momento, el siguiente a los 15 s, y así. Mientras tanto la
+     conexión de invitado sigue reintentando: si vuelve a conectar con un anfitrión, se cancela */
+  function programarRelevo() {
+    if (relevo || !guestLobby || !Object.prototype.hasOwnProperty.call(MODES, guestLobby.mode)
+      || !Object.prototype.hasOwnProperty.call(LEVELS, guestLobby.level)) return;
+    const r = Check.takeover(guestLobby.players, myDev);
+    if (!r) return;
+    relevo = { r, info: guestLobby, sala: null };
+    relevo.temporizador = setTimeout(() => intentarRelevo(relevo), r.delay);
+  }
+  function cancelarRelevo() {
+    if (!relevo) return;
+    clearTimeout(relevo.temporizador);
+    if (relevo.sala) relevo.sala.close();
+    relevo = null;
+  }
+  async function intentarRelevo(este) {
+    if (relevo !== este || !isGuest() || g) return;
+    const code = net.code;
+    const sala = new Net.Room(ROOM_PREFIX, netHandlers());
+    este.sala = sala;
+    try {
+      await sala.open(code);
+    } catch (e) {
+      sala.close();
+      if (relevo === este) relevo = null;
+      return;
+    }
+    if (relevo !== este || !isGuest() || g) { sala.close(); return; }
+    relevo = null;
+    guestLobby = null;
+    net.room.close();
+    net = { role: 'host', room: sala, code };
+    const jugadores = este.r.players.slice(0, 4).map((p) => ({ name: String(p.name).trim().slice(0, 12) || 'Invitado', dev: p.dev, ai: p.ai }));
+    lobby = { players: jugadores, mode: este.info.mode, level: este.info.level };
+    store(NET_KEY, null);
+    $('#netbar').hidden = true;
+    lobbyChanged();
   }
 
   async function guestMessage(m) {
     switch (m.t) {
-      case 'lobby': if (!g) showLobby(m); return;
+      case 'lobby': if (!g) { guestLobby = m; showLobby(m); } return;
       case 'state': adopt(m); return;
       case 'ask': {
         if (!g) return;
@@ -1314,8 +1369,7 @@
       case 'share': shareRoom(); break;
       case 'ai': {
         if (!lobby || lobby.players.length >= 4) return;
-        const used = lobby.players.map((p) => p.name);
-        const name = AI_NAMES.find((n) => !used.includes(n)) || 'Máquina';
+        const name = AI_NAMES.find((n) => !Check.nameTaken(lobby.players, n, null)) || 'Máquina';
         lobby.players.push({ name, dev: null, ai: true });
         lobbyChanged();
         break;

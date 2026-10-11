@@ -115,7 +115,30 @@
     return { room: s.net && typeof s.net.room === 'string' ? s.net.room : null };
   }
 
-  const api = { int, resMap, order, state, hasPerson, savedGame };
+  /* ---------- sala de espera ---------- */
+  const mismoNombre = (a, b) => String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
+
+  /* El jugador de la sala (persona o máquina) que ya lleva ese nombre, sin contar el propio dispositivo; o null */
+  function nameTaken(jugadores, nombre, dispositivo) {
+    if (!Array.isArray(jugadores)) return null;
+    return jugadores.find((p) => p && mismoNombre(p.name, nombre) && (p.ai || p.dev !== dispositivo)) || null;
+  }
+
+  /* Relevo del anfitrión que desaparece de la sala de espera. jugadores = la última lista recibida (el 0 es el
+     anfitrión). Si a este dispositivo le toca intentarlo, { delay, players }: espera k × 15 s, siendo k su puesto entre
+     las personas por orden de llegada, y la lista nueva lo pone primero, sin el anfitrión ni las personas anteriores */
+  function takeover(jugadores, miDispositivo) {
+    if (!Array.isArray(jugadores) || !jugadores.length) return null;
+    const personas = jugadores.slice(1).filter((p) => p && !p.ai);
+    const k = personas.findIndex((p) => p.dev === miDispositivo);
+    if (k < 0) return null;
+    const fuera = personas.slice(0, k);
+    const resto = jugadores.slice(1).filter((p) => p && p !== personas[k] && !fuera.includes(p));
+    const copia = (p) => ({ name: p.name, dev: p.ai ? null : p.dev, ai: !!p.ai });
+    return { delay: k * 15000, players: [personas[k], ...resto].map(copia) };
+  }
+
+  const api = { int, resMap, order, state, hasPerson, savedGame, nameTaken, takeover };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.DespensaCheck = api;
 })(typeof self !== 'undefined' ? self : this);

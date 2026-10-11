@@ -284,3 +284,69 @@ describe('RF-8 y RF-9 · el anfitrión ante los que entran y salen', () => {
     assert.equal(room.online(DEV), false);
   });
 });
+
+/* ---------- Cambio del 10 de octubre de 2026: RF-11, RF-12 y RF-13 ---------- */
+const Check = require('../js/check.js');
+
+describe('RF-13 · Check.nameTaken · dos jugadores no pueden llamarse igual', () => {
+  const sala = [
+    { name: 'Ana', dev: 'AAAAAAAAAAAA', ai: false },
+    { name: 'Rosa', dev: null, ai: true },
+    { name: 'Bea', dev: 'BBBBBBBBBBBB', ai: false },
+  ];
+
+  test('el mismo nombre con otras mayúsculas o espacios alrededor choca, y devuelve quién lo lleva', () => {
+    assert.equal(Check.nameTaken(sala, 'ana', 'CCCCCCCCCCCC'), sala[0]);
+    assert.equal(Check.nameTaken(sala, '  ANA ', 'CCCCCCCCCCCC'), sala[0]);
+    assert.equal(Check.nameTaken(sala, 'Bea', 'CCCCCCCCCCCC'), sala[2]);
+  });
+
+  test('una máquina también lleva su nombre', () => {
+    assert.equal(Check.nameTaken(sala, 'rosa', 'CCCCCCCCCCCC'), sala[1]);
+  });
+
+  test('con otro acento o con otro nombre no choca, ni un dispositivo consigo mismo', () => {
+    assert.equal(Check.nameTaken(sala, 'Ána', 'CCCCCCCCCCCC'), null);
+    assert.equal(Check.nameTaken(sala, 'Paco', 'CCCCCCCCCCCC'), null);
+    assert.equal(Check.nameTaken(sala, 'ana', 'AAAAAAAAAAAA'), null, 'Ana vuelve con su nombre');
+    assert.equal(Check.nameTaken([], 'Ana', 'CCCCCCCCCCCC'), null);
+  });
+});
+
+describe('RF-11 y RF-12 · Check.takeover · quién toma el relevo del anfitrión', () => {
+  /* Como llega a los invitados: el 0 es quien creó la sala; después, por orden de llegada */
+  const sala = [
+    { name: 'Ana', ai: false, dev: 'AAAAAAAAAAAA', on: true },
+    { name: 'Bea', ai: false, dev: 'BBBBBBBBBBBB', on: true },
+    { name: 'Rosa', ai: true, dev: null, on: true },
+    { name: 'Carlos', ai: false, dev: 'CCCCCCCCCCCC', on: true },
+  ];
+
+  test('el invitado que más tiempo lleva lo toma al momento, con la lista sin el anfitrión y con las máquinas', () => {
+    assert.deepEqual(Check.takeover(sala, 'BBBBBBBBBBBB'), {
+      delay: 0,
+      players: [
+        { name: 'Bea', dev: 'BBBBBBBBBBBB', ai: false },
+        { name: 'Rosa', dev: null, ai: true },
+        { name: 'Carlos', dev: 'CCCCCCCCCCCC', ai: false },
+      ],
+    });
+  });
+
+  test('el siguiente lo intenta 15 s después, y su lista ya no lleva al que no lo tomó', () => {
+    assert.deepEqual(Check.takeover(sala, 'CCCCCCCCCCCC'), {
+      delay: 15000,
+      players: [
+        { name: 'Carlos', dev: 'CCCCCCCCCCCC', ai: false },
+        { name: 'Rosa', dev: null, ai: true },
+      ],
+    });
+  });
+
+  test('ni el anfitrión, ni un dispositivo que no está en la sala, ni una lista vacía', () => {
+    assert.equal(Check.takeover(sala, 'AAAAAAAAAAAA'), null);
+    assert.equal(Check.takeover(sala, 'ZZZZZZZZZZZZ'), null);
+    assert.equal(Check.takeover([], 'BBBBBBBBBBBB'), null);
+    assert.equal(Check.takeover(null, 'BBBBBBBBBBBB'), null);
+  });
+});

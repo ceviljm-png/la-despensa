@@ -60,3 +60,35 @@ sala («Se ha cerrado la sala.») — RF-5 a RF-9 y RNF-4. La lógica de `net.js
 tests automáticos (T2 y T3).
 
 Consola: solo los errores ya conocidos del service worker del navegador integrado.
+
+## Cambio del 10 de octubre de 2026 — RF-11, RF-12 y RF-13
+
+- [x] **T5. Reglas `nameTaken` y `takeover`.** RF-11, RF-12, RF-13
+  - Tests en `test/red-salas.test.js` (en rojo) y las dos funciones en `js/check.js`.
+  - Hecho cuando: los tests pasan con `npm test` y los 216 anteriores siguen en verde.
+- [x] **T6. Nombres repetidos en el anfitrión.** RF-13
+  - `hostJoin` usa `nameTaken` en la sala de espera: quita de la lista al que ya estaba y lo echa con el aviso.
+  - Hecho cuando: `npm test` termina en `OK` y `ui.js` no tiene errores de sintaxis.
+- [x] **T7. Relevo del anfitrión.** RF-11, RF-12
+  - El invitado guarda la lista; `programarRelevo`, `intentarRelevo` y `cancelarRelevo` según el plan; `leaveNet` cancela.
+  - Hecho cuando: `npm test` termina en `OK` y `ui.js` no tiene errores de sintaxis.
+- [x] **T8. Comprobación en el navegador y cierre.** RF-11, RF-12, RF-13
+  - Las comprobaciones a mano del plan con el PeerJS de mentira; anotar aquí el resultado; spec en «implementada»;
+    `MEMORY.md` al día.
+  - Hecho cuando: el resultado está anotado aquí, `MEMORY.md` está al día y `npm test` termina en `OK`.
+
+### Resultado de la comprobación a mano (11 de octubre de 2026)
+
+En el navegador integrado, con un PeerJS de mentira instalado en la página (un anfitrión y otros invitados simulados):
+
+| Comprobación | RF | Resultado |
+|---|---|---|
+| Lista Marta (anfitriona), Pepe (esta página), Bea y la máquina Rosa; Marta desaparece. Pepe abre la sala con el mismo código al momento, ve «Tú», Bea «Desconectado», Rosa «Máquina» y los botones de anfitrión; el aviso de reconexión se oculta | RF-11 | Correcto |
+| Bea vuelve a entrar: aparece «Conectado» y recibe la lista nueva (Pepe, Bea, Rosa), con la misma partida Completa y nivel Difícil | RF-11 | Correcto |
+| Lista Marta, Juan, Pepe y la máquina Lola; Marta y Juan desaparecen. A los 7 s Pepe sigue esperando con el aviso de reconexión; a los 17 s lleva la sala, con Lola y sin Juan | RF-12 | Correcto |
+| Marta desaparece y vuelve a los 4 s: Pepe reconecta como invitado y no hay relevo (a los 20 s sigue «Esperando a que Marta empiece…») | RF-11 | Correcto |
+| Con Pepe de anfitrión: « bea » y «ROSA» reciben «Ya hay alguien llamado Bea/Rosa en la sala. Elige otro nombre.» y se cierra su conexión; «Béa» entra; Bea con su mismo dispositivo vuelve sin chocar consigo misma | RF-13 | Correcto |
+| Invitado rechazado por nombre: vuelve al inicio con el aviso, sin sala recordada | RF-13 | Correcto |
+
+Consola: solo los errores ya conocidos del service worker del navegador integrado. Sin cambios visuales nuevos (se reutilizan
+la sala de espera de anfitrión y el aviso de reconexión). Pendiente: probarlo con dos móviles reales.

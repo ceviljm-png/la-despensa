@@ -109,6 +109,9 @@ en Node se exportan con `module.exports`.
   por WebRTC, con STUN público y **sin TURN** (los de PeerJS ya no existen). En redes muy cerradas puede no conectar.
 - Si el anfitrión cierra la app, la partida se para; al reabrirla («Reabrir la sala») recupera el mismo código y los
   invitados se reconectan solos. Si se va un invitado, el anfitrión puede dejar que la máquina juegue por él.
+- En la sala de espera, si el anfitrión desaparece (sin pulsar «Cerrar la sala»), el invitado más antiguo abre la sala con
+  el mismo código y pasa a ser anfitrión (`DespensaCheck.takeover`); el siguiente lo intenta 15 s después, y así.
+  El anfitrión rechaza a quien entra con un nombre que ya está en la sala (`DespensaCheck.nameTaken`).
 - Las salas se llaman `ladespensa-XXXX` en el servidor de PeerJS.
 
 ## Flujo de desarrollo (SDD)

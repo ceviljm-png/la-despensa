@@ -22,7 +22,7 @@ Los agentes del kit SDD actualizan esta sección al terminar cada fase.
 - Adopción (`/sdd-adopt`, 10 de octubre de 2026): fases A, B y C aprobadas (10 specs de lo que ya existe, todas «implementada»);
   fase D aprobada: la red de seguridad son tests de caracterización por spec, pendientes de `/sdd-plan`. Adopción terminada.
 - Constitución: aprobada (`docs/constitution.md`, 6 principios)
-- Spec activa: ninguna (siguiente `/sdd-change`: 005)
+- Spec activa: ninguna (005 terminada el 11 de octubre de 2026; la siguiente es 002-comercio)
 
 | Spec | Estado | Tareas | Notas |
 |------|--------|--------|-------|
@@ -31,20 +31,19 @@ Los agentes del kit SDD actualizan esta sección al terminar cada fase.
 | 002-comercio | implementada (aprobada) | 5/5 | Red de seguridad hecha: `test/comercio.test.js` (11 tests); RF-9 y RNF-2 a mano. Ingeniería inversa; pendiente `/sdd-change`: el texto de rechazo debe cambiar aunque se repita la oferta |
 | 003-maquina-ofertas | implementada (aprobada) | 4/4 | Red de seguridad hecha: `test/maquina-ofertas.test.js` (22 tests, todo automático). Ingeniería inversa; sin dudas |
 | 004-maquina-turno | implementada (aprobada) | 6/6 | Red de seguridad hecha: `test/maquina-turno.test.js` (28 tests); pausas medidas a mano. Ingeniería inversa; sin dudas |
-| 005-red-salas | implementada (aprobada) | 4/4 | Red de seguridad hecha: `test/red-salas.test.js` (19 tests, con PeerJS de mentira en `test/fake-peer.js`); a mano solo lo que no necesita dos dispositivos — lo demás pendiente de probar con móviles. Ingeniería inversa; pendiente `/sdd-change`: relevo del anfitrión en la sala de espera y nombres únicos |
+| 005-red-salas | implementada | 8/8 | Red de seguridad: `test/red-salas.test.js` (con PeerJS de mentira en `test/fake-peer.js`). Cambio hecho (11 oct 2026): relevo del anfitrión en la sala de espera (RF-11, RF-12) y nombres únicos (RF-13), con `nameTaken` y `takeover` en `check.js`; la conexión real entre dos dispositivos sigue pendiente de probar con móviles |
 | 006-red-partida | implementada | 5/5 | Cambio de seguridad hecho (10 oct 2026): `js/check.js` comprueba órdenes (RF-4) y estado (RF-11); `test/red-partida.test.js` (13 tests) |
 | 007-partida-local | implementada | 7/7 | Red de seguridad: `test/partida-local.test.js` (guardado, service worker y reglas del inicio). Cambio hecho (10 oct 2026): al menos una persona (RF-11) y confirmar antes de borrar la partida guardada (RF-12) |
 | 008-cartas-de-cocina | implementada (aprobada) | 5/5 | Red de seguridad hecha: `test/cartas.test.js` (21 tests). Ingeniería inversa; sin dudas |
 | 009-tablero-y-preparacion | implementada (aprobada) | 8/8 | Ingeniería inversa; sin dudas. Red de seguridad hecha: `test/tablero.test.js` (33 tests) |
 
-**Red de seguridad (terminada el 10 de octubre de 2026).** 216 tests en `npm test` (200 de la red de seguridad y 16 de los cambios) (más la simulación), uno o varios
+**Red de seguridad (terminada el 10 de octubre de 2026).** 222 tests en `npm test` (200 de la red de seguridad y 22 de los cambios) (más la simulación), uno o varios
 archivos por spec en `test/`, con utilidades en `test/helpers.js` y un PeerJS de mentira en `test/fake-peer.js`. Cada spec
 tiene en su `tasks.md` el resultado de la comprobación a mano. La 006 se cubrió dentro de su `/sdd-change`, al sacar la
 validación de `ui.js` a `js/check.js`. Pendiente sin poder probar en este equipo: la conexión
 real entre dos dispositivos (spec 005) y la instalación en Android y Mac (spec 007).
 
-**Siguiente paso.** Los cambios pendientes con `/sdd-change`, en este orden (006 y 007 ya están hechas): 005 (relevo del anfitrión en la sala de
-espera; nombres únicos), 002 (texto de rechazo distinto aunque se repita la oferta), 000 (aviso de banca corta; aviso de
+**Siguiente paso.** Los cambios pendientes con `/sdd-change`, en este orden (006, 007 y 005 ya están hechas): 002 (texto de rechazo distinto aunque se repita la oferta), 000 (aviso de banca corta; aviso de
 robo al recibir el dispositivo) y 001 (el historial dice a quién se quita la Gran Ruta).
 A partir de aquí, todo cambio va por `/sdd-change` (sobre una spec existente) o por una spec nueva.
 
@@ -79,6 +78,8 @@ A partir de aquí, todo cambio va por `/sdd-change` (sobre una spec existente) o
 | En red, el anfitrión espera la respuesta de un invitado 90 s; el invitado espera la de una propuesta 120 s | `ui.js` |
 | Un invitado se considera caído tras 15 s sin mensajes (latido cada 4 s) | `net.js` |
 | En el inicio tiene que jugar al menos una persona; la simulación sigue usando partidas solo de máquinas (no pasa por el inicio) | `check.js` `hasPerson`, `ui.js` |
+| Si el anfitrión desaparece de la sala de espera, la lleva el invitado más antiguo con el mismo código; el siguiente lo intenta 15 s después, y así. «Cerrar la sala» sigue cerrándola para todos | `check.js` `takeover`, `ui.js` |
+| En una sala no puede haber dos nombres iguales (sin distinguir mayúsculas ni espacios; las máquinas cuentan) | `check.js` `nameTaken`, `ui.js` `hostJoin` |
 | Empezar una partida nueva con otra guardada sin terminar pide confirmación, en el inicio y en la sala de espera (no al crear la sala) | `check.js` `savedGame`, `ui.js` |
 
 ## Deuda técnica
@@ -86,8 +87,6 @@ A partir de aquí, todo cambio va por `/sdd-change` (sobre una spec existente) o
 - `ui.js` (unas 1.400 líneas) y `net.js` no tienen pruebas automáticas.
 - La simulación usa `Math.random` sin semilla: si falla, no se puede reproducir.
 - Ninguna regla concreta tiene un test propio (Gran Ruta, descarte, puertos, cartas recién compradas, `AI.judge` por nivel).
-- Si el anfitrión sale de la sala de espera, los invitados reintentan para siempre; el propietario quiere que pase a ser anfitrión el invitado que más tiempo lleve en la sala (spec 005, pendiente de `/sdd-change`).
-- En una sala dos personas pueden llevar el mismo nombre; el propietario no lo quiere (spec 005, pendiente de `/sdd-change`).
 - Cuando la banca no alcanza y solo cobra un jugador, recibe menos sin aviso; se anotará en el historial (spec 000, pendiente de `/sdd-change`).
 - Con varias personas en un dispositivo, la víctima de un robo no se entera de qué le robaron; se le avisará al recibir el dispositivo (spec 000, pendiente de `/sdd-change`).
 - Al pasar la Gran Ruta de un jugador a otro, el historial no dice a quién se le quita (spec 001, pendiente de `/sdd-change`).
